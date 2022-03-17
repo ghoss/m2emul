@@ -17,5 +17,4 @@ mule_SOURCES = \
 	le_io.c le_io.h \
 	le_usage.c le_usage.h \
 	le_loader.c le_loader.h \
-	le_modtab.c le_modtab.h \
 	le_mach.c le_mach.h

@@ -109,7 +109,7 @@ am__installdirs = "$(DESTDIR)$(bindir)"
 PROGRAMS = $(bin_PROGRAMS)
 am_mule_OBJECTS = le_main.$(OBJEXT) le_mcode.$(OBJEXT) \
 	le_stack.$(OBJEXT) le_io.$(OBJEXT) le_usage.$(OBJEXT) \
-	le_loader.$(OBJEXT) le_modtab.$(OBJEXT) le_mach.$(OBJEXT)
+	le_loader.$(OBJEXT) le_mach.$(OBJEXT)
 mule_OBJECTS = $(am_mule_OBJECTS)
 mule_LDADD = $(LDADD)
 AM_V_P = $(am__v_P_@AM_V@)
@@ -129,8 +129,8 @@ depcomp = $(SHELL) $(top_srcdir)/depcomp
 am__maybe_remake_depfiles = depfiles
 am__depfiles_remade = ./$(DEPDIR)/le_io.Po ./$(DEPDIR)/le_loader.Po \
 	./$(DEPDIR)/le_mach.Po ./$(DEPDIR)/le_main.Po \
-	./$(DEPDIR)/le_mcode.Po ./$(DEPDIR)/le_modtab.Po \
-	./$(DEPDIR)/le_stack.Po ./$(DEPDIR)/le_usage.Po
+	./$(DEPDIR)/le_mcode.Po ./$(DEPDIR)/le_stack.Po \
+	./$(DEPDIR)/le_usage.Po
 am__mv = mv -f
 COMPILE = $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) \
 	$(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS)
@@ -265,7 +265,6 @@ mule_SOURCES = \
 	le_io.c le_io.h \
 	le_usage.c le_usage.h \
 	le_loader.c le_loader.h \
-	le_modtab.c le_modtab.h \
 	le_mach.c le_mach.h
 
 all: all-am
@@ -359,7 +358,6 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/le_mach.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/le_main.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/le_mcode.Po@am__quote@ # am--include-marker
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/le_modtab.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/le_stack.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/le_usage.Po@am__quote@ # am--include-marker
 
@@ -516,7 +514,6 @@ distclean: distclean-am
 	-rm -f ./$(DEPDIR)/le_mach.Po
 	-rm -f ./$(DEPDIR)/le_main.Po
 	-rm -f ./$(DEPDIR)/le_mcode.Po
-	-rm -f ./$(DEPDIR)/le_modtab.Po
 	-rm -f ./$(DEPDIR)/le_stack.Po
 	-rm -f ./$(DEPDIR)/le_usage.Po
 	-rm -f Makefile
@@ -569,7 +566,6 @@ maintainer-clean: maintainer-clean-am
 	-rm -f ./$(DEPDIR)/le_mach.Po
 	-rm -f ./$(DEPDIR)/le_main.Po
 	-rm -f ./$(DEPDIR)/le_mcode.Po
-	-rm -f ./$(DEPDIR)/le_modtab.Po
 	-rm -f ./$(DEPDIR)/le_stack.Po
 	-rm -f ./$(DEPDIR)/le_usage.Po
 	-rm -f Makefile
