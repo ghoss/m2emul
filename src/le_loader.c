@@ -93,7 +93,7 @@ void le_read_modid(FILE *f, mod_name_t *name, mod_key_t *key)
 {
     // Read module name and key
     if ((fread(name, MOD_NAME_MAX, 1, f) != 1)
-        || (fread(key, sizeof(mod_key_t), 3, f) != 3))
+        || (fread(key, sizeof(mod_key_t), 1, f) != 1))
     {
         error(1, errno, "Object file read error");
     }
@@ -144,18 +144,15 @@ void le_parse_objfile(FILE *f, FILE *ofd)
         case 0201 : {
             // Module section
             vers = le_rword(f);
-VERBOSE("vers %x\n", vers)
             mod_entry_p mod = init_mod_entry();
-VERBOSE("after init_mod_entry\n")
             le_read_modid(f, &(mod->id.name), &(mod->id.key));
-VERBOSE("after le_read_modid\n")
 
             // Skip bytes following module name/key in later versions
             if (vers == 0x11)
                 le_skip(f, 6);
 
-            uint16_t data_sz = le_rword(f) << 1;
-            uint16_t code_sz = le_rword(f) << 1;
+            uint32_t data_sz = le_rword(f) << 1;
+            uint32_t code_sz = le_rword(f) << 1;
             VERBOSE(
                 "Loading '%s', %d/%d bytes (data/code)\n", 
                 mod->id.name, data_sz, code_sz
@@ -169,17 +166,13 @@ VERBOSE("after le_read_modid\n")
 
         case 0202 : {
             // Import section
-            fprintf(ofd, "IMPORTS\n");
             n = le_rword(f);
-            a = 1;
             while (n > 0)
             {
-                fprintf(ofd, "  %03o: ", a);
                 mod_id_t dummy;
                 le_read_modid(f, &(dummy.name), &(dummy.key));
-                VERBOSE("Importing '%s'\n", dummy.name)
+                VERBOSE("> Importing '%s'\n", dummy.name)
                 n -= 11;
-                a++;
             }
             break;
         }

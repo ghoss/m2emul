@@ -81,7 +81,8 @@ mod_entry_p init_mod_entry()
     if (module_num == MOD_TAB_MAX)
         error(1, 0, "Module table overflow");
 
-    module_num ++;
+    mod_entry_p p = &(module_tab[module_num ++]);
+    return p;
 }
 
 
