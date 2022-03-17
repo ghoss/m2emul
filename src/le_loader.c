@@ -85,22 +85,18 @@ uint8_t le_rbyte(FILE *f)
 }
 
 
-// le_rname()
-// Read a module name and key from input
+// le_read_modid()
+// Read a module name and key from file and store it
+// into "name" and "key"
 //
-void le_rname(FILE *f, FILE *ofd)
+void le_read_modid(FILE *f, mod_name_t *name, mod_key_t *key)
 {
-    for (int i = 0; i < 16; i ++)
+    // Read module name and key
+    if ((fread(name, MOD_NAME_MAX, 1, f) != 1)
+        || (fread(key, sizeof(mod_key_t), 3, f) != 3))
     {
-        char c = le_rbyte(f);
-        fprintf(ofd, "%c", (c < ' ') ? ' ' : c);
+        error(1, errno, "Object file read error");
     }
-
-    fprintf(ofd, "  (");
-    for (int i = 0; i < 3; i ++)
-        fprintf(ofd, " %04X", le_rword(f));
-
-    fprintf(ofd, " )\n");
 }
 
 
@@ -145,22 +141,33 @@ void le_parse_objfile(FILE *f, FILE *ofd)
             le_rword(f);
             break;
         
-        case 0201 :
+        case 0201 : {
             // Module section
             vers = le_rword(f);
-            fprintf(ofd, "MODULE ");
-            le_rname(f, ofd);
+VERBOSE("vers %x\n", vers)
+            mod_entry_p mod = init_mod_entry();
+VERBOSE("after init_mod_entry\n")
+            le_read_modid(f, &(mod->id.name), &(mod->id.key));
+VERBOSE("after le_read_modid\n")
 
-            // Skip bytes following filename in later versions
+            // Skip bytes following module name/key in later versions
             if (vers == 0x11)
                 le_skip(f, 6);
 
-            decl_data += le_rword(f) << 1;
-            decl_code += le_rword(f) << 1;
+            uint16_t data_sz = le_rword(f) << 1;
+            uint16_t code_sz = le_rword(f) << 1;
+            VERBOSE(
+                "Loading '%s', %d/%d bytes (data/code)\n", 
+                mod->id.name, data_sz, code_sz
+            )
+
+            decl_data += data_sz;
+            decl_code += code_sz;
             le_rword(f);
             break;
+        }
 
-        case 0202 :
+        case 0202 : {
             // Import section
             fprintf(ofd, "IMPORTS\n");
             n = le_rword(f);
@@ -168,11 +175,14 @@ void le_parse_objfile(FILE *f, FILE *ofd)
             while (n > 0)
             {
                 fprintf(ofd, "  %03o: ", a);
-                le_rname(f, ofd);
+                mod_id_t dummy;
+                le_read_modid(f, &(dummy.name), &(dummy.key));
+                VERBOSE("Importing '%s'\n", dummy.name)
                 n -= 11;
                 a++;
             }
             break;
+        }
 
         case 0204 : {
                 // Data sections

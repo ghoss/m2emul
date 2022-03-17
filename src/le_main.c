@@ -80,6 +80,9 @@ void main(int argc, char *argv[])
 		}
 		else
 		{
+			// Initialize machine
+			mach_init();
+			
 			// Try to load basename of input file
 			le_load_objfile(basn, "SYS.");
 		}

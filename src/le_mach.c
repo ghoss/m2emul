@@ -30,9 +30,9 @@ uint8_t gs_SP;
 bool gs_REQ;
 uint16_t gs_ReqNo;
 
-// Module table
+// Module table (entry 0 reserved for SYSTEM module)
 mod_entry_p module_tab;     // Pointer to module entries
-uint16_t module_num = 0;	// Number of modules in table
+uint16_t module_num = 1;	// Number of modules in table
 
 
 // find_mod_entry()
@@ -46,10 +46,10 @@ mod_entry_p find_mod_entry(mod_name_t name, mod_key_t *key)
 
     for (uint16_t i = 0; i < module_num; i ++, q ++)
     {
-        if (strncmp(name, q->name, MOD_NAME_MAX) == 0)
+        if (strncmp(name, q->id.name, MOD_NAME_MAX) == 0)
         {
             // Name matches; now check keys
-            mod_key_t *k1 = &(q->key);
+            mod_key_t *k1 = &(q->id.key);
             if (memcmp(key, k1, sizeof(mod_key_t)) == 0)
             {
                 // Name and key match; everything good
@@ -63,7 +63,7 @@ mod_entry_p find_mod_entry(mod_name_t name, mod_key_t *key)
                     "Object file mismatch: '%s'\n"
                     "  Loaded:   %04x %04x %04x\n"
                     "  Imported: %04X %04X %04X\n",
-                    k1[0], k1[1], k1[2],
+                    k1->w[0], k1->w[1], k1->w[2],
                     key[0], key[1], key[2]
                 );
             }       
@@ -94,7 +94,14 @@ void init_module_tab()
 	if (module_tab == NULL)
 		error(1, errno, "Can't allocate module table");
 
-	module_num = 0;
+    // Make a bogus entry for SYSTEM module in index 0 with key 0
+    strcpy(module_tab->id.name, "System");
+    mod_key_t *k = &(module_tab->id.key);
+    k->w[0] = k->w[1] = k->w[2] = 0x0000;
+    module_tab->init_flag = false;
+
+    // First user module (boot program) gets assigned entry 1
+	module_num = 1;
 }
 
 
