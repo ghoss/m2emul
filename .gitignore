@@ -1,0 +1,19 @@
+*.log
+*.cache
+*.scan
+*.status
+.DS_Store
+.deps
+.dirstamp
+bin
+*~
+*.o
+*.gz
+missing
+stamp-*
+Makefile
+config.h
+
+# Build-specific files/dirs
+test
+mule
