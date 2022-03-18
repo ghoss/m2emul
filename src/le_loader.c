@@ -89,11 +89,11 @@ uint8_t le_rbyte(FILE *f)
 // Read a module name and key from file and store it
 // into "name" and "key"
 //
-void le_read_modid(FILE *f, mod_name_t *name, mod_key_t *key)
+void le_read_modid(FILE *f, mod_id_t *mod)
 {
     // Read module name and key
-    if ((fread(name, MOD_NAME_MAX, 1, f) != 1)
-        || (fread(key, sizeof(mod_key_t), 1, f) != 1))
+    if ((fread(&(mod->name), MOD_NAME_MAX, 1, f) != 1)
+        || (fread(&(mod->key), sizeof(mod_key_t), 1, f) != 1))
     {
         error(1, errno, "Object file read error");
     }
@@ -115,14 +115,14 @@ void le_expect(FILE *f, uint16_t w)
 // le_parse_objfile()
 // Decode the specified object file f
 //
-void le_parse_objfile(FILE *f, FILE *ofd)
+void le_parse_objfile(FILE *f)
 {
     uint16_t w, n, a;
-    uint16_t vers;
     uint32_t total_code = 0;	// effective code size
     uint32_t decl_code = 0;		// declared code size
     uint32_t total_data = 0;	// effective data size
 	uint32_t decl_data = 0;		// declared data size
+    mod_entry_t *this_mod;      // Pointer to current mod in module table
     bool proc_section = true;
     bool eof = false;
 
@@ -143,19 +143,23 @@ void le_parse_objfile(FILE *f, FILE *ofd)
         
         case 0201 : {
             // Module section
-            vers = le_rword(f);
-            mod_entry_p mod = init_mod_entry();
-            le_read_modid(f, &(mod->id.name), &(mod->id.key));
+            mod_id_t mod;
+
+            n = le_rword(f);
+            le_read_modid(f, &mod);
+            this_mod = init_mod_entry(&mod);
+            this_mod->load_flag = true;
 
             // Skip bytes following module name/key in later versions
-            if (vers == 0x11)
+            if (n == 0x11)
                 le_skip(f, 6);
 
             uint32_t data_sz = le_rword(f) << 1;
             uint32_t code_sz = le_rword(f) << 1;
+            verbose = true;
             VERBOSE(
-                "Loading '%s', %d/%d bytes (data/code)\n", 
-                mod->id.name, data_sz, code_sz
+                "Module %s [%d], %d/%d bytes (data/code)\n", 
+                mod.name, this_mod->idx, data_sz, code_sz
             )
 
             decl_data += data_sz;
@@ -165,15 +169,23 @@ void le_parse_objfile(FILE *f, FILE *ofd)
         }
 
         case 0202 : {
-            // Import section
+            // Import section         
             n = le_rword(f);
             while (n > 0)
             {
-                mod_id_t dummy;
-                le_read_modid(f, &(dummy.name), &(dummy.key));
-                VERBOSE("> Importing '%s'\n", dummy.name)
+                mod_id_t mod;
+                mod_entry_t *p;
+
+                le_read_modid(f, &mod);
+                p = init_mod_entry(&mod);
+                VERBOSE("  imports %s [%d]", mod.name, p->idx);
+                if (p->load_flag)
+                    VERBOSE(" (loaded)")
+
+                VERBOSE("\n")
                 n -= 11;
             }
+            verbose = false;
             break;
         }
 
@@ -182,20 +194,20 @@ void le_parse_objfile(FILE *f, FILE *ofd)
                 n = le_rword(f);
                 a = le_rword(f);
                 n --;
-                fprintf(ofd, "DATA (%d bytes)\n", n << 1);
+                VERBOSE("DATA (%d bytes)\n", n << 1)
 				total_data += (n + 1) << 1;
                 uint16_t num = 0;
                 while (n-- > 0)
                 {
                     if (num % 8 == 0)
-                        fprintf(ofd, "\n  %07o", a);
+                        VERBOSE("\n  %07o", a)
                     a ++;
                     num ++;
 
                     w = le_rword(f);
-                    fprintf(ofd, "  %04x", w);
+                    VERBOSE("  %04x", w)
                 }
-                fprintf(ofd, "\n");
+                VERBOSE("\n")
                 break;
             }
 
@@ -207,27 +219,28 @@ void le_parse_objfile(FILE *f, FILE *ofd)
                 a = 0;
                 w = le_rword(f);
 
-                fprintf(ofd, "PROCEDURE #%03o", w);
+                VERBOSE("PROCEDURE #%03o", w)
                 if (n > 2)
                 {
                     uint16_t extra = (n - 2) * 2;
-                    fprintf(ofd, 
+                    VERBOSE(
                         "  (%d bytes for extra entries)", extra
-                    );
+                    )
                     total_code += (n - 2) * 2;
                 }
-                fprintf(ofd, "\n");
+                VERBOSE("\n")
 
                 while (n-- > 1)
                 {
-                    fprintf(ofd, "%7d: %07o\n", a, le_rword(f));
+                    w = le_rword(f);
+                    VERBOSE("%7d: %07o\n", a, w)
                     a ++;
                 }
             }
             else {
                 n = le_rword(f) << 1;
                 a = le_rword(f) << 1;
-                fprintf(ofd, "CODE (%d bytes)\n", n);
+                VERBOSE("CODE (%d bytes)\n", n)
                 total_code += n;
                 
                 // n = a + n - 2;
@@ -238,13 +251,13 @@ void le_parse_objfile(FILE *f, FILE *ofd)
 
         case 0205 :
             // Relocation section
-            fprintf(ofd, "FIXUPS\n");
+            VERBOSE("FIXUPS\n")
             n = le_rword(f);
 
             while (n-- > 0)
             {
                 w = le_rword(f);
-                fprintf(ofd, "  %07o\n", w);
+                VERBOSE("  %07o\n", w)
             }
             break;
 
@@ -253,20 +266,17 @@ void le_parse_objfile(FILE *f, FILE *ofd)
             eof = true;
             break;
         }
-
-        // End of section
-        if (! eof)
-            fprintf(ofd, "\n");
     };
 
     // Final stats
-    fprintf(ofd,
+    verbose = true;
+    VERBOSE(
         "STATS\n" 
         "  CodeSize: %6d / %6d\n"
 		"  DataSize: %6d / %6d\n",
         total_code, decl_code,
 		total_data, decl_data
-    );
+    )
 }
 
 
@@ -287,7 +297,21 @@ bool le_load_objfile(char *fn, char *alt_prefix)
     }
 
     // Parse the segments in the object file
-    le_parse_objfile(f, stdout);
-
+    le_parse_objfile(f);
     fclose(f);
+
+    // Load missing modules
+    uint8_t i = 1;
+    while (i < mach_num_modules())
+    {
+        mod_entry_t *p = find_mod_index(i);
+
+        if (! p->load_flag)
+        {
+            VERBOSE("Need to load %s [%d]\n", p->id.name, i);
+            if (! le_load_objfile(p->id.name, "LIB."))
+                break;
+        }
+        i ++;
+    }
 }

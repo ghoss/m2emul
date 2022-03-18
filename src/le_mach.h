@@ -48,20 +48,20 @@ typedef struct {
     uint16_t w[3];                  // Module keys are 3 words long
 } mod_key_t;
 
-typedef struct mod_id_t *mod_id_p;
 typedef struct {
     mod_name_t name;                // Module name
     mod_key_t key;                  // Module key (3 words)
 } mod_id_t;
 
-typedef struct mod_entry *mod_entry_p;
-typedef struct mod_entry {
+typedef struct {
+    uint8_t idx;                    // Module index
     mod_id_t id;                    // Module name and key
+    bool load_flag;                 // FALSE if not loaded yet
     bool init_flag;                 // FALSE if not initialized yet
     uint8_t *code_ptr;              // Pointer to module's code
     uint16_t *proctab_ptr;          // Pointer to module's procedure table
-    mod_id_p *import_ptr;           // Pointer to table of imported modules
-} *mod_entry_p;
+    mod_id_t *import_ptr;           // Pointer to table of imported modules
+} mod_entry_t;
 
 
 // Global State Variables
@@ -83,7 +83,10 @@ extern uint16_t gs_ReqNo;	// Request number, 8..15
 // Function declarations
 //
 void mach_init();
-mod_entry_p init_mod_entry();
+uint8_t mach_num_modules();
+mod_entry_t *find_mod_index(uint8_t i);
+mod_entry_t *find_mod_entry(mod_id_t *mod_id);
+mod_entry_t *init_mod_entry(mod_id_t *mod_id);
 
 
 // Tracing and debugging

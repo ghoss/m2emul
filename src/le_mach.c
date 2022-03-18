@@ -31,26 +31,45 @@ bool gs_REQ;
 uint16_t gs_ReqNo;
 
 // Module table (entry 0 reserved for SYSTEM module)
-mod_entry_p module_tab;     // Pointer to module entries
-uint16_t module_num = 1;	// Number of modules in table
+mod_entry_t *module_tab;    // Pointer to module entries
+uint8_t module_num = 1;	    // Number of modules in table
+
+
+// mach_num_modules()
+// Return number of module entries currently in table
+//
+uint8_t mach_num_modules()
+{
+    return module_num;
+}
+
+
+// find_mod_index()
+// Returns the module entry given by the specified index
+//
+mod_entry_t *find_mod_index(uint8_t i)
+{
+    return &(module_tab[i]);
+}
 
 
 // find_mod_entry()
 // Finds the module entry given by name and key
 // Returns a pointer to it, or NULL if not found
 //
-mod_entry_p find_mod_entry(mod_name_t name, mod_key_t *key)
+mod_entry_t *find_mod_entry(mod_id_t *mod)
 {
-    mod_entry_p p = NULL;
-    mod_entry_p q = module_tab;
+    mod_entry_t *p = NULL;
+    mod_entry_t *q = module_tab;
 
     for (uint16_t i = 0; i < module_num; i ++, q ++)
     {
-        if (strncmp(name, q->id.name, MOD_NAME_MAX) == 0)
+        if (strncmp(mod->name, q->id.name, MOD_NAME_MAX) == 0)
         {
             // Name matches; now check keys
             mod_key_t *k1 = &(q->id.key);
-            if (memcmp(key, k1, sizeof(mod_key_t)) == 0)
+            mod_key_t *k0 = &(mod->key);
+            if (memcmp(k0, k1, sizeof(mod_key_t)) == 0)
             {
                 // Name and key match; everything good
                 p = q;
@@ -64,7 +83,7 @@ mod_entry_p find_mod_entry(mod_name_t name, mod_key_t *key)
                     "  Loaded:   %04x %04x %04x\n"
                     "  Imported: %04X %04X %04X\n",
                     k1->w[0], k1->w[1], k1->w[2],
-                    key[0], key[1], key[2]
+                    k0->w[0], k0->w[1], k0->w[2]
                 );
             }       
         }
@@ -76,12 +95,28 @@ mod_entry_p find_mod_entry(mod_name_t name, mod_key_t *key)
 // init_mod_entry()
 // Allocates a new module entry and returns a pointer to it
 //
-mod_entry_p init_mod_entry()
+mod_entry_t *init_mod_entry(mod_id_t *mod)
 {
-    if (module_num == MOD_TAB_MAX)
-        error(1, 0, "Module table overflow");
+    mod_entry_t *p;
 
-    mod_entry_p p = &(module_tab[module_num ++]);
+    if ((p = find_mod_entry(mod)) == NULL)
+    {
+        // Register new module
+        if (module_num == MOD_TAB_MAX)
+            error(1, 0, "Module table overflow");
+
+        // Assign new entry in table
+        p = &(module_tab[module_num]);
+        p->idx = module_num ++;
+
+        // Copy module name and key to table
+        memcpy(&(p->id), mod, sizeof(mod_id_t));
+
+        p->init_flag = false;
+        p->import_ptr = NULL;
+        p->code_ptr = NULL;
+        p->proctab_ptr = NULL;
+    }
     return p;
 }
 
@@ -91,7 +126,7 @@ mod_entry_p init_mod_entry()
 //
 void init_module_tab()
 {
-	module_tab = malloc(MOD_TAB_MAX * sizeof(struct mod_entry));
+	module_tab = malloc(MOD_TAB_MAX * sizeof(mod_entry_t));
 	if (module_tab == NULL)
 		error(1, errno, "Can't allocate module table");
 
@@ -100,6 +135,7 @@ void init_module_tab()
     mod_key_t *k = &(module_tab->id.key);
     k->w[0] = k->w[1] = k->w[2] = 0x0000;
     module_tab->init_flag = false;
+    module_tab->load_flag = true;
 
     // First user module (boot program) gets assigned entry 1
 	module_num = 1;
