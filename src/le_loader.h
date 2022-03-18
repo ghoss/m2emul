@@ -14,6 +14,6 @@
 
 // Function declarations
 //
-bool le_load_objfile(char *fn, char *alt_prefix);
+bool le_load_initfile(char *fn, char *alt_prefix);
 
 #endif

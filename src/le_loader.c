@@ -13,39 +13,6 @@
 #include "le_loader.h"
 
 
-// le_load_search
-// Locates an object file by first trying to open "fn",
-// then "alt_prefix.fn" if not successful
-//
-FILE *le_load_search(char *fn, char *alt_prefix)
-{
-    FILE *f;
-
-    // Try filename "fn" (assumed to already be a basename)
-    VERBOSE("Opening '%s'... ", fn)
-    if ((f = fopen(fn, "r")) == NULL)
-    {
-        char *fn1;
-
-        // Try alt_prefix (must be 3 chars + ".", e.g. LIB. or SYS.)
-        fn1 = malloc(strlen(fn) + 4);
-        strncpy(fn1, alt_prefix, 4);
-        strcpy(fn1 + 4, fn);
-        VERBOSE(" failed (%s)\nTrying '%s'... ", strerror(errno), fn1)
-
-        if ((f = fopen(fn1, "r")) == NULL)
-            VERBOSE(" failed (%s)\n", strerror(errno))
-
-        free(fn1);
-    }
-
-    if (f != NULL)
-        VERBOSE("ok\n")
-
-    return f;
-}
-
-
 // le_skip()
 // Skip a number of bytes in input stream
 //
@@ -135,6 +102,11 @@ void le_parse_objfile(FILE *f)
 
         switch (w)
         {
+        case 0xC1 :
+            // Alternate start of file, sometimes encountered
+            le_rword(f);
+            break;
+
         case 0200 :
             // Start of file
             le_expect(f, 1);
@@ -156,7 +128,6 @@ void le_parse_objfile(FILE *f)
 
             uint32_t data_sz = le_rword(f) << 1;
             uint32_t code_sz = le_rword(f) << 1;
-            verbose = true;
             VERBOSE(
                 "Module %s [%d], %d/%d bytes (data/code)\n", 
                 mod.name, this_mod->idx, data_sz, code_sz
@@ -185,7 +156,6 @@ void le_parse_objfile(FILE *f)
                 VERBOSE("\n")
                 n -= 11;
             }
-            verbose = false;
             break;
         }
 
@@ -269,7 +239,6 @@ void le_parse_objfile(FILE *f)
     };
 
     // Final stats
-    verbose = true;
     VERBOSE(
         "STATS\n" 
         "  CodeSize: %6d / %6d\n"
@@ -277,6 +246,70 @@ void le_parse_objfile(FILE *f)
         total_code, decl_code,
 		total_data, decl_data
     )
+}
+
+
+// le_fix_extcalls
+// Fixes external calls after modules i..max have been loaded
+//
+void le_fix_extcalls(uint8_t top)
+{
+    uint8_t max = mach_num_modules();
+
+    while (top < max)
+    {
+        mod_entry_t *p = find_mod_index(top);
+
+        if (! p->load_flag)
+            error(1, 0, "Module %s missing after load");
+        
+        VERBOSE("Fixup %s\n", p->id.name)
+        top ++;
+    }
+}
+
+
+// le_load_search
+// Locates an object file by first trying to open "fn",
+// then "alt_prefix.fn" if not successful
+//
+FILE *le_load_search(char *fn, char *alt_prefix)
+{
+    FILE *f;
+    char *fn1;
+
+    // Reserve a string large enough for SYS./LIB. and .OBJ checks
+    uint8_t l = strlen(fn);
+    fn1 = malloc(l + 5);
+
+    // Make sure filename ends in .OBJ
+    strcpy(fn1, fn);
+    if ((l < 4) || (strncmp(&(fn1[l - 4]), ".OBJ", 4) != 0))
+    {
+        strcat(fn1, ".OBJ");
+    }
+
+    // Try filename "fn" (assumed to already be a basename)
+    VERBOSE("Opening '%s'... ", fn1)
+    if (((f = fopen(fn1, "r")) == NULL)
+        && (strncmp(fn1, alt_prefix, 4) != 0))
+    {
+        // Try alt_prefix (must be 3 chars + ".", e.g. LIB. or SYS.)
+        char *fn2 = malloc(strlen(fn1) + 5);
+        strcpy(fn2, alt_prefix);
+        strcat(fn2, fn1);
+        VERBOSE(" failed\nTrying '%s'... ", fn2)
+
+        if ((f = fopen(fn2, "r")) == NULL)
+            VERBOSE(" failed\n")
+        free(fn2);
+    }
+
+    if (f != NULL)
+        VERBOSE("ok\n")
+
+    free(fn1);
+    return f;
 }
 
 
@@ -297,21 +330,39 @@ bool le_load_objfile(char *fn, char *alt_prefix)
     }
 
     // Parse the segments in the object file
+    uint8_t top = mach_num_modules() + 1;
     le_parse_objfile(f);
     fclose(f);
 
-    // Load missing modules
-    uint8_t i = 1;
-    while (i < mach_num_modules())
+    // Load missing modules found after current one
+    while (top < mach_num_modules())
     {
-        mod_entry_t *p = find_mod_index(i);
+        // Check all entries in module table
+        mod_entry_t *p = find_mod_index(top);
 
         if (! p->load_flag)
         {
-            VERBOSE("Need to load %s [%d]\n", p->id.name, i);
+            // Try to load this module
             if (! le_load_objfile(p->id.name, "LIB."))
                 break;
         }
-        i ++;
+        top ++;
     }
+}
+
+
+// le_load_initfile
+// Loads the initial object file and its dependencies
+//
+bool le_load_initfile(char *fn, char *alt_prefix)
+{
+    // The new module will be loaded here if successful
+    uint8_t top = mach_num_modules();
+
+    // Load executable and its dependencies
+    if (! le_load_objfile(fn, alt_prefix))
+        return false;
+
+    // Fixup all external calls in executable and above
+    le_fix_extcalls(top);
 }

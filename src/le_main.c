@@ -84,7 +84,7 @@ void main(int argc, char *argv[])
 			mach_init();
 			
 			// Try to load basename of input file
-			le_load_objfile(basn, "SYS.");
+			le_load_initfile(basn, "SYS.");
 		}
 		free(fn1);
 		free(fn2);

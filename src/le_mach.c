@@ -79,9 +79,10 @@ mod_entry_t *find_mod_entry(mod_id_t *mod)
             {
                 // Key mismatch
                 error(1, 0, 
-                    "Object file mismatch: '%s'\n"
-                    "  Loaded:   %04x %04x %04x\n"
-                    "  Imported: %04X %04X %04X\n",
+                    "Object key mismatch: '%s'\n"
+                    "  Found:    %04X %04X %04X\n"
+                    "  Expected: %04X %04X %04X\n",
+                    mod->name,
                     k1->w[0], k1->w[1], k1->w[2],
                     k0->w[0], k0->w[1], k0->w[2]
                 );
