@@ -27,6 +27,9 @@
 #define MACH_STK_SZ		65535	// Stack size in words
 #define MACH_EXSTK_SZ	15		// Expression stack size in words
 
+// Machine word = 16 bits
+#define MACH_WORD_SZ    sizeof(uint16_t)
+
 // Stack Memory
 typedef uint16_t mach_stack_t[MACH_STK_SZ];
 extern mach_stack_t *mem_stack;
@@ -45,22 +48,27 @@ extern mach_exstack_t *mem_exstack;
 typedef char mod_name_t[MOD_NAME_MAX + 1];
 
 typedef struct {
-    uint16_t w[3];                  // Module keys are 3 words long
+    uint16_t w[3];				// Module keys are 3 words long
 } mod_key_t;
 
 typedef struct {
-    mod_name_t name;                // Module name
-    mod_key_t key;                  // Module key (3 words)
+    uint8_t idx;                // Index in module table
+    mod_name_t name;			// Module name
+    mod_key_t key;				// Module key (3 words)
+    bool loaded;				// FALSE if not loaded yet
 } mod_id_t;
 
 typedef struct {
-    uint8_t idx;                    // Module index
-    mod_id_t id;                    // Module name and key
-    bool load_flag;                 // FALSE if not loaded yet
-    bool init_flag;                 // FALSE if not initialized yet
-    uint8_t *code_ptr;              // Pointer to module's code
-    uint16_t *proctab_ptr;          // Pointer to module's procedure table
-    mod_id_t *import_ptr;           // Pointer to table of imported modules
+    uint8_t idx;				// Module index
+    mod_id_t id;				// Module name and key
+    bool init;					// FALSE if not initialized yet
+    uint8_t *code;				// Pointer to module's code frame
+	uint8_t *data;				// Pointer to module's data frame
+    uint32_t code_sz;           // Size of code frame in bytes
+    uint32_t data_sz;           // Size of data frame in bytes
+    uint16_t *proctab_ptr;		// Pointer to module's procedure table
+    mod_id_t *import;	    	// Pointer to table of imported modules
+    uint8_t import_sz;          // Number of entries in import table
 } mod_entry_t;
 
 
@@ -91,6 +99,6 @@ mod_entry_t *init_mod_entry(mod_id_t *mod_id);
 
 // Tracing and debugging
 extern bool verbose;
-#define VERBOSE(...)  if (verbose) fprintf(stderr, __VA_ARGS__);
+#define VERBOSE(...)  if (verbose) fprintf(stdout, __VA_ARGS__);
 
 #endif

@@ -29,7 +29,7 @@ uint16_t le_rword(FILE *f)
 {
     uint16_t wr;
 
-    if (fread(&wr, sizeof(uint16_t), 1, f) != 1)
+    if (fread(&wr, MACH_WORD_SZ, 1, f) != 1)
         wr = 0xffff;
 
     // Swap byte order
@@ -89,7 +89,7 @@ void le_parse_objfile(FILE *f)
     uint32_t decl_code = 0;		// declared code size
     uint32_t total_data = 0;	// effective data size
 	uint32_t decl_data = 0;		// declared data size
-    mod_entry_t *this_mod;      // Pointer to current mod in module table
+    mod_entry_t *mod;      // Pointer to current mod in module table
     bool proc_section = true;
     bool eof = false;
 
@@ -115,69 +115,82 @@ void le_parse_objfile(FILE *f)
         
         case 0201 : {
             // Module section
-            mod_id_t mod;
+            mod_id_t modid;
 
             n = le_rword(f);
-            le_read_modid(f, &mod);
-            this_mod = init_mod_entry(&mod);
-            this_mod->load_flag = true;
+            le_read_modid(f, &modid);
+            mod = init_mod_entry(&modid);
+            mod->id.loaded = true;
 
             // Skip bytes following module name/key in later versions
             if (n == 0x11)
                 le_skip(f, 6);
 
-            uint32_t data_sz = le_rword(f) << 1;
-            uint32_t code_sz = le_rword(f) << 1;
+            // Allocate memory for module's code and data
+            mod->data_sz = le_rword(f) << 1;
+            mod->code_sz = le_rword(f) << 1;
+            if ((((mod->data = calloc(mod->data_sz, 1))) == NULL)
+                || (((mod->code = calloc(mod->code_sz, 1)) == NULL)))
+                error(1, errno, "Can't allocate code/data blocks");
+
             VERBOSE(
                 "Module %s [%d], %d/%d bytes (data/code)\n", 
-                mod.name, this_mod->idx, data_sz, code_sz
+                modid.name, mod->idx, 
+                mod->data_sz, mod->code_sz
             )
 
-            decl_data += data_sz;
-            decl_code += code_sz;
+            decl_data += mod->data_sz;
+            decl_code += mod->code_sz;
             le_rword(f);
             break;
         }
 
         case 0202 : {
-            // Import section         
-            n = le_rword(f);
-            while (n > 0)
+            // Import section
+            n = le_rword(f) / 11;   // Each entry is 11 words long
+
+            // Allocate import table for module
+            mod->import_sz = n;
+            if ((mod->import = calloc(n, sizeof(mod_id_t))) == NULL)
+                error(1, errno, "Can't allocate import table");
+
+            for (uint16_t i = 0; i < n; i ++)
             {
-                mod_id_t mod;
+                mod_id_t modid;
                 mod_entry_t *p;
 
-                le_read_modid(f, &mod);
-                p = init_mod_entry(&mod);
-                VERBOSE("  imports %s [%d]", mod.name, p->idx);
-                if (p->load_flag)
+                // Assign entry in module table if not yet found
+                le_read_modid(f, &modid);
+                p = init_mod_entry(&modid);
+
+                // Store entry to import table
+                memcpy(mod->import + i, &(p->id), sizeof(mod_id_t));
+
+                VERBOSE("  imports %s [%d]", modid.name, p->idx);
+                if (p->id.loaded)
                     VERBOSE(" (loaded)")
 
                 VERBOSE("\n")
-                n -= 11;
             }
             break;
         }
 
         case 0204 : {
                 // Data sections
-                n = le_rword(f);
-                a = le_rword(f);
-                n --;
-                VERBOSE("DATA (%d bytes)\n", n << 1)
-				total_data += (n + 1) << 1;
-                uint16_t num = 0;
-                while (n-- > 0)
-                {
-                    if (num % 8 == 0)
-                        VERBOSE("\n  %07o", a)
-                    a ++;
-                    num ++;
+                n = (le_rword(f) << 1) - 2;
+                a = le_rword(f) << 1;
 
-                    w = le_rword(f);
-                    VERBOSE("  %04x", w)
-                }
-                VERBOSE("\n")
+                // Check for data frame overrun
+                if (a + n > mod->data_sz)
+                    error(1, 0, 
+                        "Module %s: Data frame overrun", mod->id.name
+                    );
+
+                // Read data block into memory at offset a
+                total_data += n;
+                if (fread(mod->data + a, n, 1, f) != 1)
+                    error(1, errno, "File read error (data block)");
+
                 break;
             }
 
@@ -208,13 +221,19 @@ void le_parse_objfile(FILE *f)
                 }
             }
             else {
-                n = le_rword(f) << 1;
+                n = (le_rword(f) << 1) - 2;
                 a = le_rword(f) << 1;
-                VERBOSE("CODE (%d bytes)\n", n)
+
+                // Check for code frame overrun
+                if (a + n > mod->code_sz)
+                    error(1, 0, 
+                        "Module %s: Code frame overrun", mod->id.name
+                    );
+
+                // Read code block into memory at offset a
                 total_code += n;
-                
-                // n = a + n - 2;
-                le_skip(f, n - 2);
+                if (fread(mod->code + a, n, 1, f) != 1)
+                    error(1, errno, "File read error (code block)");
             }
             proc_section = ! proc_section;
             break;
@@ -237,15 +256,6 @@ void le_parse_objfile(FILE *f)
             break;
         }
     };
-
-    // Final stats
-    VERBOSE(
-        "STATS\n" 
-        "  CodeSize: %6d / %6d\n"
-		"  DataSize: %6d / %6d\n",
-        total_code, decl_code,
-		total_data, decl_data
-    )
 }
 
 
@@ -260,7 +270,7 @@ void le_fix_extcalls(uint8_t top)
     {
         mod_entry_t *p = find_mod_index(top);
 
-        if (! p->load_flag)
+        if (! p->id.loaded)
             error(1, 0, "Module %s missing after load");
         
         VERBOSE("Fixup %s\n", p->id.name)
@@ -340,7 +350,7 @@ bool le_load_objfile(char *fn, char *alt_prefix)
         // Check all entries in module table
         mod_entry_t *p = find_mod_index(top);
 
-        if (! p->load_flag)
+        if (! p->id.loaded)
         {
             // Try to load this module
             if (! le_load_objfile(p->id.name, "LIB."))

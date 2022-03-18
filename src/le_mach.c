@@ -113,9 +113,12 @@ mod_entry_t *init_mod_entry(mod_id_t *mod)
         // Copy module name and key to table
         memcpy(&(p->id), mod, sizeof(mod_id_t));
 
-        p->init_flag = false;
-        p->import_ptr = NULL;
-        p->code_ptr = NULL;
+        p->id.loaded = false;
+        p->init = false;
+        p->import = NULL;
+        p->import_sz = 0;
+        p->code = NULL;
+        p->data = NULL;
         p->proctab_ptr = NULL;
     }
     return p;
@@ -135,8 +138,8 @@ void init_module_tab()
     strcpy(module_tab->id.name, "System");
     mod_key_t *k = &(module_tab->id.key);
     k->w[0] = k->w[1] = k->w[2] = 0x0000;
-    module_tab->init_flag = false;
-    module_tab->load_flag = true;
+    module_tab->init = false;
+    module_tab->id.loaded = true;
 
     // First user module (boot program) gets assigned entry 1
 	module_num = 1;
