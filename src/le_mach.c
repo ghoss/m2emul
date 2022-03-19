@@ -108,11 +108,11 @@ mod_entry_t *init_mod_entry(mod_id_t *mod)
 
         // Assign new entry in table
         p = &(module_tab[module_num]);
-        p->idx = module_num ++;
 
         // Copy module name and key to table
         memcpy(&(p->id), mod, sizeof(mod_id_t));
 
+        p->id.idx = module_num ++;
         p->id.loaded = false;
         p->init = false;
         p->import = NULL;

@@ -10,6 +10,7 @@
 //=====================================================
 
 #include "le_mach.h"
+#include "le_trace.h"
 #include "le_loader.h"
 
 
@@ -152,7 +153,7 @@ void le_parse_objfile(FILE *f)
 
             VERBOSE(
                 "Module %s [%d], %d/%d bytes (data/code)\n", 
-                modid.name, mod->idx, 
+                modid.name, mod->id.idx, 
                 mod->data_sz, mod->code_sz
             )
 
@@ -183,8 +184,10 @@ void le_parse_objfile(FILE *f)
                 // Store entry to import table
                 memcpy(mod->import + i, &(p->id), sizeof(mod_id_t));
 
-                VERBOSE("  imports %s [%d]%c\n", modid.name, p->idx,
-					p->id.loaded ? ' ' : '*');
+                VERBOSE(
+					"  imports %s [%d]%c\n", p->id.name, p->id.idx,
+					p->id.loaded ? ' ' : '*'
+				)
             }
             break;
         }
@@ -321,28 +324,34 @@ void le_fix_extcalls(uint8_t top)
 					// Fixup location depending on opcode in [loc-1]
 					uint8_t opc = mod->code[loc - 1];
 					uint8_t b1 = mod->code[loc];
+					uint8_t midx, b2;
 
 					switch (opc)
 					{
-						case 022 :	// LIW
-							break;
+						// case 022 :	// LIW
+						// 	break;
 
-						case 027 :	// LEA
-							break;
+						// case 027 :	// LEA
+						// 	break;
 
-						case 042 :	// LEW
-						case 062 :	// SEW
-							break;
+						// case 042 :	// LEW
+						// case 062 :	// SEW
+						// 	break;
 
-						case 043 :	// LED 
-						case 063 :	// SED
-							break;
+						// case 043 :	// LED 
+						// case 063 :	// SED
+						// 	break;
 						
 						case 0355 :	// CLX
+							// Change first opbyte to absolute index of module
+							if (b1 > mod->import_n)
+								error(1, 0, "CLX mod #%03o invalid", b1);
+							mod->code[loc] = mod->import[b1 - 1].idx;
 							break;
 						
 						default :
-							error(1, 0, "Can't fixup opcode %03o", opc);
+							le_decode(mod, loc - 1);
+							error(1, 0, "Can't fixup opcode", opc);
 							break;
 					}
 				}
@@ -357,6 +366,11 @@ void le_fix_extcalls(uint8_t top)
 			}
 			mod->proc_tmp = NULL;
 		}
+
+		// Free module import table
+		if (mod->import != NULL)
+			free(mod->import);
+			
         top ++;
     }
 }

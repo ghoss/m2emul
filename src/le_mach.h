@@ -71,7 +71,6 @@ typedef struct proctmp_t {
 
 // Module table entry
 typedef struct {
-    uint8_t idx;				// Module index
     mod_id_t id;				// Module name and key
     bool init;					// FALSE if not initialized yet
     uint8_t *code;				// Pointer to module's code frame
