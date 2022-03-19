@@ -13,12 +13,31 @@
 #include "le_loader.h"
 
 
+// le_memerr()
+// Halt because of failed memory allocation
+//
+void le_memerr()
+{
+	error(1, errno, "Loader: could not allocate memory");
+}
+
+
+// le_rderr()
+// Halt because of file read error
+//
+void le_rderr(char *msg)
+{
+	error(1, errno, "Object file read error (%s)", msg);
+}
+
+
 // le_skip()
 // Skip a number of bytes in input stream
 //
 void le_skip(FILE *f, uint16_t n)
 {
-    fseek(f, n, SEEK_CUR);
+    if (fseek(f, n, SEEK_CUR) != 0)
+		le_rderr("le_skip");
 }
 
 
@@ -61,9 +80,7 @@ void le_read_modid(FILE *f, mod_id_t *mod)
     // Read module name and key
     if ((fread(&(mod->name), MOD_NAME_MAX, 1, f) != 1)
         || (fread(&(mod->key), sizeof(mod_key_t), 1, f) != 1))
-    {
-        error(1, errno, "Object file read error");
-    }
+		le_rderr("modid");
 }
 
 
@@ -131,7 +148,7 @@ void le_parse_objfile(FILE *f)
             mod->code_sz = le_rword(f) << 1;
             if ((((mod->data = calloc(mod->data_sz, 1))) == NULL)
                 || (((mod->code = calloc(mod->code_sz, 1)) == NULL)))
-                error(1, errno, "Can't allocate code/data blocks");
+                le_memerr();
 
             VERBOSE(
                 "Module %s [%d], %d/%d bytes (data/code)\n", 
@@ -150,9 +167,9 @@ void le_parse_objfile(FILE *f)
             n = le_rword(f) / 11;   // Each entry is 11 words long
 
             // Allocate import table for module
-            mod->import_sz = n;
+            mod->import_n = n;
             if ((mod->import = calloc(n, sizeof(mod_id_t))) == NULL)
-                error(1, errno, "Can't allocate import table");
+                le_memerr();
 
             for (uint16_t i = 0; i < n; i ++)
             {
@@ -166,11 +183,8 @@ void le_parse_objfile(FILE *f)
                 // Store entry to import table
                 memcpy(mod->import + i, &(p->id), sizeof(mod_id_t));
 
-                VERBOSE("  imports %s [%d]", modid.name, p->idx);
-                if (p->id.loaded)
-                    VERBOSE(" (loaded)")
-
-                VERBOSE("\n")
+                VERBOSE("  imports %s [%d]%c\n", modid.name, p->idx,
+					p->id.loaded ? ' ' : '*');
             }
             break;
         }
@@ -189,36 +203,34 @@ void le_parse_objfile(FILE *f)
                 // Read data block into memory at offset a
                 total_data += n;
                 if (fread(mod->data + a, n, 1, f) != 1)
-                    error(1, errno, "File read error (data block)");
+                    le_rderr("data");
 
                 break;
             }
 
-        case 0203 :
+        case 0203 : 
             if (proc_section)
             {
+				proctmp_t *p;
+
                 // Procedure entry point section
-                n = le_rword(f);
-                a = 0;
+                n = le_rword(f) - 1;
                 w = le_rword(f);
 
-                VERBOSE("PROCEDURE #%03o", w)
-                if (n > 2)
-                {
-                    uint16_t extra = (n - 2) * 2;
-                    VERBOSE(
-                        "  (%d bytes for extra entries)", extra
-                    )
-                    total_code += (n - 2) * 2;
-                }
-                VERBOSE("\n")
+				// Allocate new entry in temporary procedure list
+				if ((p = malloc(sizeof(proctmp_t))) == NULL)
+					le_memerr();
 
-                while (n-- > 1)
-                {
-                    w = le_rword(f);
-                    VERBOSE("%7d: %07o\n", a, w)
-                    a ++;
-                }
+				// Store first entry point into table
+				p->idx = w;
+				p->entry = le_rword(f);
+				p->next = mod->proc_tmp;
+				mod->proc_tmp = p;
+				if (w + 1 > mod->proc_n)
+					mod->proc_n = w + 1;
+				
+				// Ignore extra entry points for now
+                le_skip(f, (n - 1) << 1);
             }
             else {
                 n = (le_rword(f) << 1) - 2;
@@ -233,22 +245,28 @@ void le_parse_objfile(FILE *f)
                 // Read code block into memory at offset a
                 total_code += n;
                 if (fread(mod->code + a, n, 1, f) != 1)
-                    error(1, errno, "File read error (code block)");
+                    le_rderr("code");
             }
             proc_section = ! proc_section;
             break;
 
-        case 0205 :
+        case 0205 : {
             // Relocation section
-            VERBOSE("FIXUPS\n")
             n = le_rword(f);
 
-            while (n-- > 0)
-            {
-                w = le_rword(f);
-                VERBOSE("  %07o\n", w)
-            }
+			// Allocate memory for fixup table
+			uint16_t *p;
+			if ((p = calloc(n, MACH_WORD_SZ)) == NULL)
+				le_memerr();
+
+			// Read fixups into table
+			if (fread(p, MACH_WORD_SZ, n, f) != n)
+				le_rderr("fixups");
+
+			mod->proc_tmp->fixup = p;
+			mod->proc_tmp->fixup_n = n;
             break;
+		}
 
         default :
             // No more readable sections
@@ -268,12 +286,48 @@ void le_fix_extcalls(uint8_t top)
 
     while (top < max)
     {
-        mod_entry_t *p = find_mod_index(top);
+		uint16_t n;
+        mod_entry_t *mod = find_mod_index(top);
 
-        if (! p->id.loaded)
+        if (! mod->id.loaded)
             error(1, 0, "Module %s missing after load");
         
-        VERBOSE("Fixup %s\n", p->id.name)
+		// Part 1: Create final procedure table
+		n = mod->proc_n;
+        VERBOSE("Fixup %s (%d procs)\n", mod->id.name, n)
+		if (n > 0) 
+		{
+			// Allocate memory for procedure table
+			// Missing procedures will have an (invalid) entry point 0
+			// which will be detected at runtime
+			uint16_t *ptab = calloc(n, MACH_WORD_SZ);
+			mod->proc = ptab;	
+
+			proctmp_t *pt = mod->proc_tmp;
+			while (pt != NULL)
+			{
+				VERBOSE("Proc %d\n", pt->idx)
+				// Store procedure index in final table
+				*(ptab + pt->idx) = pt->entry;
+
+				// Process fixups for code
+				for (uint16_t i = 0; i < pt->fixup_n; i ++)
+				{
+					uint16_t loc = pt->fixup[i];
+					uint16_t w = mod->code[loc];
+					VERBOSE("Fixup %07o = %04x\n", loc, w)
+					if (mod->code[loc - 1] != 0355)
+						error(1, 0, "No CLX before fixup");
+				}
+				free(pt->fixup);
+
+				// Free current list entry and advance to next one
+				proctmp_t *qt = pt;
+				pt = pt->next;
+				free(qt);
+			}
+			mod->proc_tmp = NULL;
+		}
         top ++;
     }
 }
@@ -290,7 +344,8 @@ FILE *le_load_search(char *fn, char *alt_prefix)
 
     // Reserve a string large enough for SYS./LIB. and .OBJ checks
     uint8_t l = strlen(fn);
-    fn1 = malloc(l + 5);
+    if ((fn1 = malloc(l + 5)) == NULL)
+		le_memerr();
 
     // Make sure filename ends in .OBJ
     strcpy(fn1, fn);
@@ -306,6 +361,8 @@ FILE *le_load_search(char *fn, char *alt_prefix)
     {
         // Try alt_prefix (must be 3 chars + ".", e.g. LIB. or SYS.)
         char *fn2 = malloc(strlen(fn1) + 5);
+		if (fn2 == NULL)
+			le_memerr();
         strcpy(fn2, alt_prefix);
         strcat(fn2, fn1);
         VERBOSE(" failed\nTrying '%s'... ", fn2)

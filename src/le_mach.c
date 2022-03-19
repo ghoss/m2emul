@@ -116,10 +116,11 @@ mod_entry_t *init_mod_entry(mod_id_t *mod)
         p->id.loaded = false;
         p->init = false;
         p->import = NULL;
-        p->import_sz = 0;
+        p->import_n = 0;
         p->code = NULL;
         p->data = NULL;
-        p->proctab_ptr = NULL;
+        p->proc_tmp = NULL;
+        p->proc_n = 0;
     }
     return p;
 }
