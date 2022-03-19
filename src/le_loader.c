@@ -225,6 +225,8 @@ void le_parse_objfile(FILE *f)
 				p->idx = w;
 				p->entry = le_rword(f);
 				p->next = mod->proc_tmp;
+				p->fixup = NULL;
+				p->fixup_n = 0;
 				mod->proc_tmp = p;
 				if (w + 1 > mod->proc_n)
 					mod->proc_n = w + 1;
@@ -260,8 +262,8 @@ void le_parse_objfile(FILE *f)
 				le_memerr();
 
 			// Read fixups into table
-			if (fread(p, MACH_WORD_SZ, n, f) != n)
-				le_rderr("fixups");
+			for (uint16_t i = 0; i < n; i ++)
+				p[i] = le_rword(f);
 
 			mod->proc_tmp->fixup = p;
 			mod->proc_tmp->fixup_n = n;
@@ -306,7 +308,6 @@ void le_fix_extcalls(uint8_t top)
 			proctmp_t *pt = mod->proc_tmp;
 			while (pt != NULL)
 			{
-				VERBOSE("Proc %d\n", pt->idx)
 				// Store procedure index in final table
 				*(ptab + pt->idx) = pt->entry;
 
@@ -314,14 +315,42 @@ void le_fix_extcalls(uint8_t top)
 				for (uint16_t i = 0; i < pt->fixup_n; i ++)
 				{
 					uint16_t loc = pt->fixup[i];
-					uint16_t w = mod->code[loc];
-					VERBOSE("Fixup %07o = %04x\n", loc, w)
-					if (mod->code[loc - 1] != 0355)
-						error(1, 0, "No CLX before fixup");
+					if (loc >= mod->code_sz)
+						error(1, 0, "Fixup codeframe overrun\n");
+
+					// Fixup location depending on opcode in [loc-1]
+					uint8_t opc = mod->code[loc - 1];
+					uint8_t b1 = mod->code[loc];
+
+					switch (opc)
+					{
+						case 022 :	// LIW
+							break;
+
+						case 027 :	// LEA
+							break;
+
+						case 042 :	// LEW
+						case 062 :	// SEW
+							break;
+
+						case 043 :	// LED 
+						case 063 :	// SED
+							break;
+						
+						case 0355 :	// CLX
+							break;
+						
+						default :
+							error(1, 0, "Can't fixup opcode %03o", opc);
+							break;
+					}
 				}
+
+				// Free fixup table for proc
 				free(pt->fixup);
 
-				// Free current list entry and advance to next one
+				// Free current proc entry and advance to next one
 				proctmp_t *qt = pt;
 				pt = pt->next;
 				free(qt);
