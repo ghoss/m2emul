@@ -20,6 +20,7 @@
 
 #define _HALT	error(1, 0, "Halted at opcode %03o", gs_IR);
 
+
 // le_transfer()
 //
 void le_transfer(bool chg, uint16_t to, uint16_t from)
