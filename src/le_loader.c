@@ -320,30 +320,27 @@ void le_fix_extcalls(uint8_t top)
 
 					switch (opc)
 					{
-						// case 022 :	// LIW
-						// 	break;
-
-						// case 027 :	// LEA
-						// 	break;
-
-						// case 042 :	// LEW
-						// case 062 :	// SEW
-						// 	break;
-
-						// case 043 :	// LED 
-						// case 063 :	// SED
-						// 	break;
-						
+						case 043 :	// LED 
+						case 063 :	// SED
+						case 027 :	// LEA
+						case 042 :	// LEW
+						case 062 :	// SEW
 						case 0355 :	// CLX
 							// Change first opbyte to absolute index of module
 							if (b1 > mod->import_n)
-								error(1, 0, "CLX mod #%03o invalid", b1);
+								error(1, 0, 
+									"%: %07o opc %03o illegal module #%03o", 
+									mod->id.name, loc - 1, opc, b1
+								);
 							mod->code[loc] = mod->import[b1 - 1].idx;
 							break;
 						
 						default :
 							le_decode(mod, loc - 1);
-							error(1, 0, "Can't fixup opcode", opc);
+							error(1, 0, 
+								"Module %s: fixup #%03o invalid", 
+								mod->id.name, b1
+							);
 							break;
 					}
 				}

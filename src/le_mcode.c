@@ -59,10 +59,9 @@ void le_execute(uint16_t modn, uint16_t procn)
 	// le_next()
 	// Fetch next instruction
 	//
-	uint16_t le_next()
+	uint8_t le_next()
 	{
-		gs_PC ++;
-		return (uint16_t) code_p[(gs_F << 2) + (gs_PC - 1)];
+		return (uint8_t) code_p[gs_PC ++];
 	}
 
 	// le_next2()
@@ -70,15 +69,17 @@ void le_execute(uint16_t modn, uint16_t procn)
 	//
 	uint16_t le_next2()
 	{
+		uint16_t w = le_next();
+		w = (w << 8) | le_next();
 		gs_PC += 2;
-		return (uint16_t) code_p[(gs_F << 2) + (gs_PC - 2)] << 8
-			+ code_p[(gs_F << 2) + (gs_PC - 1)];
+		return w;
 	}
 	
 	// Setup registers and go
 	mod_entry_t *mod_p = find_mod_index(modn);
 	code_p = mod_p->code;
 	gs_PC = mod_p->proc[procn];
+
 	// gs_P = (*mem_stack)[4];
 	// es_restore_regs(true);
 
@@ -90,11 +91,11 @@ void le_execute(uint16_t modn, uint16_t procn)
 			le_transfer(true, 2 * gs_ReqNo, 2 * gs_ReqNo + 1);
 		}
 
-		// Get next instruction
-		gs_IR = le_next();
-
 		// Enter monitor
 		le_monitor(mod_p, gs_PC);
+
+		// Get next instruction
+		gs_IR = le_next();
 
 		// Execute M-Code in IR
 		switch (gs_IR)

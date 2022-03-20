@@ -48,6 +48,7 @@ void le_monitor_usage()
 {
     fprintf(stderr,
         "x\tSingle step one instruction\n"
+		"q\tExit interpreter\n"
         "h\tShow this help summary\n\n"
     );
 }

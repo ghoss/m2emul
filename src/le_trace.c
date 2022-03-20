@@ -114,21 +114,26 @@ void le_decode(mod_entry_t *mod, uint16_t pc)
     // Jumps: print offset previously fetched in a1
     switch (mcode)
     {
+		case 022 :
+			// LIW
+			OUT("\t; x%04x", a1)
+			break;
+
         case 034 ... 035 :
             // JPB, JPBC
-            OUT("\t<-[%o]", pc - (int16_t) a1)
+            OUT("\t; <-[%o]", pc - (int16_t) a1)
             break;
             
         case 030 ... 033 :
         case 036 ... 037 :
             // Forward jumps
-            OUT( "\t->[%o]", pc + (int16_t) a1)
+            OUT( "\t; ->[%o]", pc + (int16_t) a1)
             break;
 
         case 0300 :
             // FOR1
             OUT( 
-                "\t->[%o] %s",
+                "\t; ->[%o] %s",
                 pc + (int8_t) (a1 & 0xff) - 3,
                 (b1 == 0) ? "UP" : "DN"
             )
@@ -137,7 +142,7 @@ void le_decode(mod_entry_t *mod, uint16_t pc)
         case 0301 :
             // FOR2
             OUT( 
-                "\t->[%o]",
+                "\t; ->[%o]",
                 pc + (int8_t) (a1 & 0xff) - 3
             )
             break;
@@ -156,7 +161,7 @@ void le_decode(mod_entry_t *mod, uint16_t pc)
 //
 void le_monitor(mod_entry_t *mod, uint16_t pc)
 {
-	char c;
+	char c[64];
 	
 	// Decode current instruction
 	le_decode(mod, pc);
@@ -164,10 +169,14 @@ void le_monitor(mod_entry_t *mod, uint16_t pc)
 	// Enter command loop
 	do {
 		printf("mon> ");
-		c = fgetc(stdin);
+		scanf("%63s", &c);
 
-		switch (c)
+		switch (c[0])
 		{
+			case '\n' :
+				// Ignore EOL
+				break;
+
 			case 'h' :
 				// Built-in help
 				le_monitor_usage();
@@ -177,9 +186,13 @@ void le_monitor(mod_entry_t *mod, uint16_t pc)
 				// Do nothing (will exit)
 				break;
 
+			case 'q' :
+				// Exit
+				exit(0);
+
 			default :
 				error(0, 0, "Invalid monitor command, press 'h' for help");
 				break;
 		}
-	} while (c != 'x');
+	} while (c[0] != 'x');
 }
