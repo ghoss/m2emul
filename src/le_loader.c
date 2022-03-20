@@ -466,5 +466,6 @@ bool le_load_initfile(char *fn, char *alt_prefix)
     le_fix_extcalls(top);
 
 	// Start execution of module at procedure 0
+	VERBOSE("Starting execution.\n\n")
 	le_execute(top, 0);
 }

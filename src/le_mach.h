@@ -114,6 +114,7 @@ mod_entry_t *init_mod_entry(mod_id_t *mod_id);
 
 // Tracing and debugging
 extern bool verbose;
+extern bool trace;
 #define VERBOSE(...)  if (verbose) fprintf(stdout, __VA_ARGS__);
 
 #endif

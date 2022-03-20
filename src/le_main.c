@@ -31,7 +31,7 @@ void main(int argc, char *argv[])
 
 	// Parse command line options
 	opterr = 0;
-	while ((c = getopt (argc, argv, "Vvh")) != -1)
+	while ((c = getopt (argc, argv, "Vtvh")) != -1)
 	{
 		switch (c)
 		{
@@ -48,6 +48,11 @@ void main(int argc, char *argv[])
 		case 'v' :
 			// Verbose mode
 			verbose = true;
+			break;
+
+		case 't' :
+			// Trace mode enabled
+			trace = true;
 			break;
 
 		case '?' :

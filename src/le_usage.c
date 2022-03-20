@@ -33,7 +33,8 @@ void le_prog_usage()
 {
     fprintf(stderr,
         "USAGE: " PKG " [-hV] [object_file]\n\n"
-        "-h\tShow this help information\n"
+ 		"-t\tEnable trace mode (runtime debugging)\n"
+		"-h\tShow this help information\n"
         "-V\tShow version information\n\n"
         "-v\tVerbose mode\n\n"
         "object_file is the filename of a Lilith M-Code (OBJ) file.\n\n"
@@ -47,8 +48,9 @@ void le_prog_usage()
 void le_monitor_usage()
 {
     fprintf(stderr,
-        "x\tSingle step one instruction\n"
+        "x\tExecute one instruction\n"
+		"r\tShow registers\n"
 		"q\tExit interpreter\n"
-        "h\tShow this help summary\n\n"
+        "h, ?\tShow this help summary\n\n"
     );
 }

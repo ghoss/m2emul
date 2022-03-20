@@ -10,11 +10,15 @@
 //=====================================================
 
 #include "le_usage.h"
+#include "le_mach.h"
 #include "le_trace.h"
 
 
 // Output shorthand
 #define OUT(...)		fprintf(ofd, __VA_ARGS__);
+
+// Global variables
+bool trace = true;		// Enables trace mode
 
 
 // M-Code mnemonics table
@@ -162,13 +166,17 @@ void le_decode(mod_entry_t *mod, uint16_t pc)
 void le_monitor(mod_entry_t *mod, uint16_t pc)
 {
 	char c[64];
+	FILE *ofd = stdout;
 	
+	// Return if trace mode disabled
+	if (! trace) return;
+
 	// Decode current instruction
 	le_decode(mod, pc);
 
 	// Enter command loop
 	do {
-		printf("mon> ");
+		printf("cmd> ");
 		scanf("%63s", &c);
 
 		switch (c[0])
@@ -177,7 +185,13 @@ void le_monitor(mod_entry_t *mod, uint16_t pc)
 				// Ignore EOL
 				break;
 
+			case 'r' :
+				// Show registers
+				OUT("S=%07o\n", gs_S)
+				break;
+
 			case 'h' :
+			case '?' :
 				// Built-in help
 				le_monitor_usage();
 				break;
