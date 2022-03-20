@@ -9,6 +9,7 @@
 // Published by Guido Hoss under GNU Public License V3.
 //=====================================================
 
+#include "le_usage.h"
 #include "le_trace.h"
 
 
@@ -147,4 +148,38 @@ void le_decode(mod_entry_t *mod, uint16_t pc)
 			break;
     }
     OUT("\n")
+}
+
+
+// le_monitor()
+// Waits for a monitor command from keyboard and executes it
+//
+void le_monitor(mod_entry_t *mod, uint16_t pc)
+{
+	char c;
+	
+	// Decode current instruction
+	le_decode(mod, pc);
+
+	// Enter command loop
+	do {
+		printf("mon> ");
+		c = fgetc(stdin);
+
+		switch (c)
+		{
+			case 'h' :
+				// Built-in help
+				le_monitor_usage();
+				break;
+
+			case 'x' :
+				// Do nothing (will exit)
+				break;
+
+			default :
+				error(0, 0, "Invalid monitor command, press 'h' for help");
+				break;
+		}
+	} while (c != 'x');
 }

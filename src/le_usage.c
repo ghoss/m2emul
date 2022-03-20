@@ -14,10 +14,10 @@
 #include "le_usage.h"
 
 
-// md_version()
-// Show version information
+// le_prog_version()
+// Show program version information
 //
-void le_version()
+void le_prog_version()
 {
     fprintf(stderr, 
         PKG " v" PACKAGE_VERSION " (" VERSION_BUILD_DATE ")\n"
@@ -26,10 +26,10 @@ void le_version()
 }
 
 
-// md_usage()
-// Show usage information
+// le_prog_usage()
+// Show program usage information
 //
-void le_usage()
+void le_prog_usage()
 {
     fprintf(stderr,
         "USAGE: " PKG " [-hV] [object_file]\n\n"
@@ -37,5 +37,17 @@ void le_usage()
         "-V\tShow version information\n\n"
         "-v\tVerbose mode\n\n"
         "object_file is the filename of a Lilith M-Code (OBJ) file.\n\n"
+    );
+}
+
+
+// le_monitor_usage()
+// Show program usage information
+//
+void le_monitor_usage()
+{
+    fprintf(stderr,
+        "x\tSingle step one instruction\n"
+        "h\tShow this help summary\n\n"
     );
 }

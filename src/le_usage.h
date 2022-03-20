@@ -19,7 +19,8 @@
 
 // Function declarations
 //
-void le_usage();
-void le_version();
+void le_prog_usage();
+void le_prog_version();
+void le_monitor_usage();
 
 #endif

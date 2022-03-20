@@ -14,5 +14,6 @@
 
 // Function declarations
 //
+void le_execute(uint16_t mod, uint16_t proc);
 
 #endif

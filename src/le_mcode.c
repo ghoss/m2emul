@@ -12,10 +12,13 @@
 #include "le_mach.h"
 #include "le_stack.h"
 #include "le_io.h"
+#include "le_trace.h"
+#include "le_mcode.h"
 
 #define MCI_TLCADR	016		// Trap location addr
 #define MCI_DFTADR	040		// Data frame table addr
 
+#define _HALT	error(1, 0, "Halted at opcode %03o", gs_IR);
 
 // le_transfer()
 //
@@ -47,10 +50,12 @@ void le_trap(uint16_t n)
 
 // le_interpret()
 // Main interpreter loop
-// Executes code starting at code_p
+// Executes specified module and procedure
 //
-void le_interpret(uint8_t *code_p)
+void le_execute(uint16_t modn, uint16_t procn)
 {
+	uint8_t *code_p;	// Pointer to module code base
+
 	// le_next()
 	// Fetch next instruction
 	//
@@ -70,57 +75,76 @@ void le_interpret(uint8_t *code_p)
 			+ code_p[(gs_F << 2) + (gs_PC - 1)];
 	}
 	
-	// Start interpreter loop
-	gs_P = (*mem_stack)[4];
-	es_restore_regs(true);
+	// Setup registers and go
+	mod_entry_t *mod_p = find_mod_index(modn);
+	code_p = mod_p->code;
+	gs_PC = mod_p->proc[procn];
+	// gs_P = (*mem_stack)[4];
+	// es_restore_regs(true);
 
 	do {
+		// Interrupt handling
 		if (gs_REQ)
+		{
+			_HALT
 			le_transfer(true, 2 * gs_ReqNo, 2 * gs_ReqNo + 1);
+		}
 
+		// Get next instruction
 		gs_IR = le_next();
+
+		// Enter monitor
+		le_monitor(mod_p, gs_PC);
 
 		// Execute M-Code in IR
 		switch (gs_IR)
 		{
 		case 000 ... 017:
 			// LI0 - LI15 load immediate
+			_HALT
 			es_push(gs_IR & 0xf);
 			break;
 
 		case 020 :
 			// LIB  load immediate byte
+			_HALT
 			es_push(le_next());
 			break;
 
 		case 022 :
 			// LIW  load immediate word
+			_HALT
 			es_push(le_next2());
 			break;
 
 		case 023 :
 			// LID  load immediate double word
+			_HALT
 			es_push(le_next2());
 			es_push(le_next2());
 			break;
 
 		case 024 :
 			// LLA  load local address
+			_HALT
 			es_push(gs_L + le_next());
 			break;
 
 		case 025 :
 			// LGA  load global address
+			_HALT
 			es_push(gs_G + le_next());
 			break;
 
 		case 026 :
 			// LSA  load stack address
+			_HALT
 			es_push(es_pop() + le_next());
 			break;
 
 		case 027 : {
 			// LEA  load external address
+			_HALT
 			uint16_t i = le_next();
 			uint16_t j = le_next();
 			es_push((*mem_stack)[MCI_DFTADR + i] + j);
@@ -129,6 +153,7 @@ void le_interpret(uint8_t *code_p)
 
 		case 030 :
 			// JPC  jump conditional
+			_HALT
 			if (es_pop() == 0)
 			{
 				uint16_t i = le_next2();
@@ -142,6 +167,7 @@ void le_interpret(uint8_t *code_p)
 
 		case 031 : {
 			// JP   jump
+			_HALT
 			uint16_t i = le_next2();
 			gs_PC += i - 2;
 			break;
@@ -149,6 +175,7 @@ void le_interpret(uint8_t *code_p)
 
 		case 032 :
 			// JPFC  jump forward conditional
+			_HALT
 			if (es_pop() == 0)
 			{
 				uint16_t i = le_next();
@@ -162,6 +189,7 @@ void le_interpret(uint8_t *code_p)
 
 		case 033 : {
 			// JPF  jump forward
+			_HALT
 			uint16_t i = le_next();
 			gs_PC += i - 1;
 			break;
@@ -169,6 +197,7 @@ void le_interpret(uint8_t *code_p)
 
 		case 034 :
 			// JPBC  jump backward conditional
+			_HALT
 			if (es_pop() == 0)
 			{
 				uint16_t i = le_next();
@@ -182,6 +211,7 @@ void le_interpret(uint8_t *code_p)
 
 		case 035 : {
 			// JPB  jump backward
+			_HALT
 			uint16_t i = le_next();
 			gs_PC -= i + 1;
 			break;
@@ -189,6 +219,7 @@ void le_interpret(uint8_t *code_p)
 
 		case 036 :
 			// ORJP  short circuit OR
+			_HALT
 			if (es_pop() == 0)
 			{
 				gs_PC ++;
@@ -203,6 +234,7 @@ void le_interpret(uint8_t *code_p)
 
 		case 037 :
 			// ANDJP  short circuit AND
+			_HALT
 			if (es_pop() == 0)
 			{
 				es_push(0);
@@ -217,11 +249,13 @@ void le_interpret(uint8_t *code_p)
 
 		case 040 :
 			// LLW  load local word
+			_HALT
 			es_push((*mem_stack)[gs_L + le_next()]);
 			break;
 
 		case 041 : {
 			// LLD  load local double word
+			_HALT
 			uint16_t i = gs_L + le_next();
 			es_push((*mem_stack)[i]);
 			es_push((*mem_stack)[i + 1]);
@@ -230,6 +264,7 @@ void le_interpret(uint8_t *code_p)
 
 		case 042 : {
 			// LEW  load external word
+			_HALT
 			uint16_t i = le_next();
 			uint16_t j = le_next();
 			es_push((*mem_stack)[(*mem_stack)[MCI_DFTADR + i] + j]);
@@ -238,6 +273,7 @@ void le_interpret(uint8_t *code_p)
 
 		case 043 : {
 			// LED
+			_HALT
 			uint16_t i = le_next();
 			uint16_t j = le_next();
 			uint16_t k = (*mem_stack)[MCI_DFTADR + i] + j;
@@ -248,16 +284,19 @@ void le_interpret(uint8_t *code_p)
 
 		case 044 ... 057 :
 			// LLW4-LLW15
+			_HALT
 			es_push((*mem_stack)[gs_L + (gs_IR & 0xf)]);
 			break;
 
 		case 060 :
 			// SLW  store local word
+			_HALT
 			(*mem_stack)[gs_L + le_next()] = es_pop();
 			break;
 
 		case 061 : {
 			// SLD  store local double word
+			_HALT
 			uint16_t i = gs_L + le_next();
 			(*mem_stack)[i + 1] = es_pop();
 			(*mem_stack)[i] = es_pop();
@@ -266,6 +305,7 @@ void le_interpret(uint8_t *code_p)
 
 		case 062 : {
 			// SEW  store external word
+			_HALT
 			uint16_t i = le_next();
 			uint16_t j = le_next();
 			(*mem_stack)[(*mem_stack)[MCI_DFTADR + i] + j] = es_pop();
@@ -274,6 +314,7 @@ void le_interpret(uint8_t *code_p)
 
 		case 063 : {
 			// SED  store external double word
+			_HALT
 			uint16_t i = le_next();
 			uint16_t j = le_next();
 			uint16_t k = (*mem_stack)[(*mem_stack)[MCI_DFTADR + i] + j];
@@ -284,16 +325,19 @@ void le_interpret(uint8_t *code_p)
 
 		case 064 ... 077 :
 			// SLW4-SLW15  store local word
+			_HALT
 			(*mem_stack)[gs_L + (gs_IR & 0xf)] = es_pop();
 			break;
 
 		case 0100 :
 			// LGW  load global word
+			_HALT
 			es_push((*mem_stack)[gs_G + le_next()]);
 			break;
 
 		case 0101 : {
 			// LGD  load global double word
+			_HALT
 			uint16_t i = le_next() + gs_G;
 			es_push((*mem_stack)[i]);
 			es_push((*mem_stack)[i + 1]);
@@ -302,16 +346,19 @@ void le_interpret(uint8_t *code_p)
 
 		case 0102 ... 0117 :
 			// LGW2 - LGW15  load global word
+			_HALT
 			es_push((*mem_stack)[gs_G + (gs_IR & 0xf)]);
 			break;
 
 		case 0120 :
 			// SGW  store global word
+			_HALT
 			(*mem_stack)[gs_G + le_next()] = es_pop();
 			break;
 
 		case 0121 : {
 			// SGD  store global double word
+			_HALT
 			uint16_t i = le_next() + gs_G;
 			(*mem_stack)[i + 1] = es_pop();
 			(*mem_stack)[i] = es_pop();
@@ -320,16 +367,19 @@ void le_interpret(uint8_t *code_p)
 
 		case 0122 ... 0137 :
 			// SGW2 - SGW15  store global word
+			_HALT
 			(*mem_stack)[gs_G + (gs_IR & 0xf)] = es_pop();
 			break;
 
 		case 0140 ... 0157 :
 			// LSW0 - LSW15  load stack addressed word
+			_HALT
 			es_push((*mem_stack)[es_pop() + (gs_IR & 0xf)]);
 			break;
 
 		case 0160 ... 0177 : {
 			// SSW0 - SSW15  store stack-addressed word
+			_HALT
 			uint16_t k = es_pop();
 			uint16_t i = es_pop() + (gs_IR & 0xf);
 			(*mem_stack)[i] = k;
@@ -338,6 +388,7 @@ void le_interpret(uint8_t *code_p)
 
 		case 0200 : {
 			// LSW  load stack word
+			_HALT
 			uint16_t i = es_pop() + le_next();
 			es_push((*mem_stack)[i]);
 			break;
@@ -345,6 +396,7 @@ void le_interpret(uint8_t *code_p)
 
 		case 0201 : {
 			// LSD  load stack double word
+			_HALT
 			uint16_t i = es_pop() + le_next();
 			es_push((*mem_stack)[i]);
 			es_push((*mem_stack)[i + 1]);
@@ -353,6 +405,7 @@ void le_interpret(uint8_t *code_p)
 
 		case 0202 : {
 			// LSD0  load stack double word
+			_HALT
 			uint16_t i = es_pop();
 			es_push((*mem_stack)[i]);
 			es_push((*mem_stack)[i + 1]);
@@ -361,6 +414,7 @@ void le_interpret(uint8_t *code_p)
 
 		case 0203 : {
 			// LXFW  load indexed frame word
+			_HALT
 			uint16_t i = es_pop();
 			i += es_pop() << 2;
 			es_push((*mem_stack)[i]);
@@ -369,11 +423,13 @@ void le_interpret(uint8_t *code_p)
 
 		case 0204 :
 			// LSTA  load string address
+			_HALT
 			es_push((*mem_stack)[gs_G + 2] + le_next());
 			break;
 
 		case 0205 : {
 			// LXB  load indexed byte
+			_HALT
 			uint16_t i = es_pop();
 			uint16_t j = es_pop();
 			uint16_t k = (*mem_stack)[j + (i >> 1)];
@@ -383,6 +439,7 @@ void le_interpret(uint8_t *code_p)
 
 		case 0206 : {
 			// LXW  load indexed word
+			_HALT
 			uint16_t i = es_pop();
 			i += es_pop();
 			es_push((*mem_stack)[i]);
@@ -391,6 +448,7 @@ void le_interpret(uint8_t *code_p)
 
 		case 0207 : {
 			// LXD  load indexed double word
+			_HALT
 			uint16_t i = es_pop() << 1;
 			i += es_pop();
 			es_push((*mem_stack)[i]);
@@ -400,6 +458,7 @@ void le_interpret(uint8_t *code_p)
 
 		case 0210 : {
 			// DADD  double add
+			_HALT
 			floatword_t z;
 			z.l = es_dpop().l;
 			z.l += es_dpop().l;
@@ -409,6 +468,7 @@ void le_interpret(uint8_t *code_p)
 
 		case 0211 : {
 			// DSUB  double subtract
+			_HALT
 			floatword_t z;
 			z.l = es_dpop().l;
 			z.l -= es_dpop().l;
@@ -418,6 +478,7 @@ void le_interpret(uint8_t *code_p)
 
 		case 0212 : {
 			// DMUL  double multiply
+			_HALT
 			floatword_t z;
 			z.l = es_dpop().l;
 			z.l *= es_dpop().l;
@@ -427,6 +488,7 @@ void le_interpret(uint8_t *code_p)
 
 		case 0213 : {
 			// DDIV  double divide
+			_HALT
 			uint32_t j = es_pop();
 			floatword_t x = es_dpop();
 			es_push(x.l % j);
@@ -436,6 +498,7 @@ void le_interpret(uint8_t *code_p)
 
 		case 0216 : {
 			// DSHL  double shift left
+			_HALT
 			floatword_t x = es_dpop();
 			x.l <<= 1;
 			es_dpush(x);
@@ -444,6 +507,7 @@ void le_interpret(uint8_t *code_p)
 
 		case 0217 : {
 			// DSHR  double shift right
+			_HALT
 			floatword_t x = es_dpop();
 			x.l >>= 1;
 			es_dpush(x);
@@ -452,6 +516,7 @@ void le_interpret(uint8_t *code_p)
 
 		case 0220 : {
 			// SSW  store stack word
+			_HALT
 			uint16_t k = es_pop();
 			uint16_t i = es_pop() + le_next();
 			(*mem_stack)[i] = k;
@@ -460,6 +525,7 @@ void le_interpret(uint8_t *code_p)
 
 		case 0221 : {
 			// SSD  store stack double word
+			_HALT
 			uint16_t k = es_pop();
 			uint16_t j = es_pop();
 			uint16_t i = es_pop() + le_next();
@@ -470,6 +536,7 @@ void le_interpret(uint8_t *code_p)
 
 		case 0222 : {
 			// SSD0  store stack double word
+			_HALT
 			uint16_t k = es_pop();
 			uint16_t j = es_pop();
 			uint16_t i = es_pop();
@@ -480,6 +547,7 @@ void le_interpret(uint8_t *code_p)
 
 		case 0223 : {
 			// SXFW  store indexed frame word
+			_HALT
 			uint16_t i = es_pop();
 			uint16_t k = es_pop();
 			k += es_pop() << 2;
@@ -489,6 +557,7 @@ void le_interpret(uint8_t *code_p)
 
 		case 0224 : {
 			// TS  test and set
+			_HALT
 			uint16_t i = es_pop();
 			es_push((*mem_stack)[i]);
 			(*mem_stack)[i] = 1;
@@ -497,6 +566,7 @@ void le_interpret(uint8_t *code_p)
 
 		case 0225 : {
 			// SXB  store indxed byte
+			_HALT
 			uint16_t k = es_pop();
 			uint16_t i = es_pop();
 			uint16_t j = es_pop() + (i >> 1);
@@ -512,6 +582,7 @@ void le_interpret(uint8_t *code_p)
 
 		case 0226 : {
 			// SXW  store indexed word
+			_HALT
 			uint16_t k = es_pop();
 			uint16_t i = es_pop();
 			i += es_pop();
@@ -521,6 +592,7 @@ void le_interpret(uint8_t *code_p)
 
 		case 0227 : {
 			// SXD  store indexed double word
+			_HALT
 			uint16_t k = es_pop();
 			uint16_t j = es_pop();
 			uint16_t i = es_pop() << 2;
@@ -532,6 +604,7 @@ void le_interpret(uint8_t *code_p)
 
 		case 0230 : {
 			// FADD  floating add
+			_HALT
 			floatword_t x = es_dpop();
 			x.f += es_dpop().f;
 			es_dpush(x);
@@ -540,6 +613,7 @@ void le_interpret(uint8_t *code_p)
 
 		case 0231 : {
 			// FSUB  floating subtract
+			_HALT
 			floatword_t x = es_dpop();
 			x.f -= es_dpop().f;
 			es_dpush(x);
@@ -548,6 +622,7 @@ void le_interpret(uint8_t *code_p)
 
 		case 0232 : {
 			// FMUL  floating multiply
+			_HALT
 			floatword_t x = es_dpop();
 			x.f *= es_dpop().f;
 			es_dpush(x);
@@ -556,6 +631,7 @@ void le_interpret(uint8_t *code_p)
 
 		case 0233 : {
 			// FDIV  floating divide
+			_HALT
 			floatword_t x = es_dpop();
 			x.f /= es_dpop().f;
 			es_dpush(x);
@@ -564,6 +640,7 @@ void le_interpret(uint8_t *code_p)
 
 		case 0234 : {
 			// FCMP  floating compare
+			_HALT
 			float x = es_dpop().f;
 			float y = es_dpop().f;
 			if (x > y)
@@ -584,6 +661,7 @@ void le_interpret(uint8_t *code_p)
 		}
 
 		case 0235 : {
+			_HALT
 			// FABS  floating absolute value
 			floatword_t x = es_dpop();
 			if (x.f < 0.0) 
@@ -594,6 +672,7 @@ void le_interpret(uint8_t *code_p)
 
 		case 0236 : {
 			// FNEG  floating negative
+			_HALT
 			floatword_t x = es_dpop();
 			x.f = -x.f;
 			es_dpush(x);
@@ -602,6 +681,7 @@ void le_interpret(uint8_t *code_p)
 
 		case 0237 : {
 			// FFCT  floating functions
+			_HALT
 			uint16_t i = le_next();
 			floatword_t z;
 
@@ -628,6 +708,7 @@ void le_interpret(uint8_t *code_p)
 
 		case 0240 : {
 			// READ
+			_HALT
 			uint16_t i = es_pop();
 			uint16_t k = es_pop();
 			(*mem_stack)[i] = le_ioread(k);
@@ -636,6 +717,7 @@ void le_interpret(uint8_t *code_p)
 
 		case 0241 : {
 			// WRITE
+			_HALT
 			uint16_t i = es_pop();
 			uint16_t k = es_pop();
 			le_iowrite(k, i);
@@ -659,6 +741,7 @@ void le_interpret(uint8_t *code_p)
 
 		case 0245 : {
 			// UCHK
+			_HALT
 			uint16_t k = es_pop();
 			uint16_t j = es_pop();
 			uint16_t i = es_pop();
@@ -680,17 +763,20 @@ void le_interpret(uint8_t *code_p)
 
 		case 0250 :
 			// ENTP  entry priority
+			_HALT
 			(*mem_stack)[gs_L + 3] = gs_M;
 			gs_M = 0xffff << (16 - le_next());
 			break;
 
 		case 0251 :
 			// EXP  exit priority
+			_HALT
 			gs_M = (*mem_stack)[gs_L + 3];
 			break;
 
 		case 0252 : {
 			// ULSS
+			_HALT
 			uint16_t j = es_pop();
 			uint16_t i = es_pop();
 			es_push((i < j) ? 1 : 0);
@@ -699,6 +785,7 @@ void le_interpret(uint8_t *code_p)
 
 		case 0253 : {
 			// ULEQ
+			_HALT
 			uint16_t j = es_pop();
 			uint16_t i = es_pop();
 			es_push((i <= j) ? 1 : 0);
@@ -707,6 +794,7 @@ void le_interpret(uint8_t *code_p)
 
 		case 0254 : {
 			// UGTR
+			_HALT
 			uint16_t j = es_pop();
 			uint16_t i = es_pop();
 			es_push((i > j) ? 1 : 0);
@@ -715,6 +803,7 @@ void le_interpret(uint8_t *code_p)
 
 		case 0255 : {
 			// UGEQ
+			_HALT
 			uint16_t j = es_pop();
 			uint16_t i = es_pop();
 			es_push((i >= j) ? 1 : 0);
@@ -723,6 +812,7 @@ void le_interpret(uint8_t *code_p)
 
 		case 0256 : {
 			// TRA  coroutine transfer
+			_HALT
 			uint16_t i = es_pop();
 			uint16_t j = es_pop();
 			le_transfer((le_next() != 0), i, j);
@@ -731,6 +821,7 @@ void le_interpret(uint8_t *code_p)
 
 		case 0257 : {
 			// RDS  read string
+			_HALT
 			uint16_t k = es_pop();
 			int i = le_next();
 			do {
@@ -741,6 +832,7 @@ void le_interpret(uint8_t *code_p)
 
 		case 0260 : {
 			// LODFW  reload stack after function return
+			_HALT
 			uint16_t i = es_pop();
 			es_restore();
 			es_push(i);
@@ -749,6 +841,7 @@ void le_interpret(uint8_t *code_p)
 
 		case 0261 :
 			// LODFD  reload stack after function return
+			_HALT
 			uint16_t i = es_pop();
 			uint16_t j = es_pop();
 			es_restore();
@@ -758,11 +851,13 @@ void le_interpret(uint8_t *code_p)
 
 		case 0262 :
 			// STORE
+			_HALT
 			es_save();
 			break;
 
 		case 0263 : {
 			// STOFV
+			_HALT
 			uint16_t i = es_pop();
 			es_save();
 			(*mem_stack)[gs_S ++] = i;
@@ -771,11 +866,13 @@ void le_interpret(uint8_t *code_p)
 
 		case 0264 :
 			// STOT  copy from stack to procedure stack
+			_HALT
 			(*mem_stack)[gs_S ++] = es_pop();
 			break;
 
 		case 0265 : {
 			// COPT  copy element on top of expression stack
+			_HALT
 			uint16_t i = es_pop();
 			es_push(i);
 			es_push(i);
@@ -784,11 +881,13 @@ void le_interpret(uint8_t *code_p)
 
 		case 0266 :
 			// DECS  decrement stackpointer
+			_HALT
 			gs_S --;
 			break;
 
 		case 0267 : {
 			// PCOP  allocation and copy of value parameter
+			_HALT
 			(*mem_stack)[gs_L + le_next()] = gs_S;
 			uint16_t sz = es_pop();
 			uint16_t k = gs_S + sz;
@@ -800,6 +899,7 @@ void le_interpret(uint8_t *code_p)
 
 		case 0270 : {
 			// UADD
+			_HALT
 			uint16_t j = es_pop();
 			uint16_t i = es_pop();
 			es_push(i + j);
@@ -808,6 +908,7 @@ void le_interpret(uint8_t *code_p)
 
 		case 0271 : {
 			// USUB
+			_HALT
 			uint16_t j = es_pop();
 			uint16_t i = es_pop();
 			es_push(i - j);
@@ -816,6 +917,7 @@ void le_interpret(uint8_t *code_p)
 
 		case 0272 : {
 			// UMUL
+			_HALT
 			uint16_t j = es_pop();
 			uint16_t i = es_pop();
 			es_push(i * j);
@@ -824,6 +926,7 @@ void le_interpret(uint8_t *code_p)
 
 		case 0273 : {
 			// UDIV
+			_HALT
 			uint16_t j = es_pop();
 			uint16_t i = es_pop();
 			es_push(i / j);
@@ -832,6 +935,7 @@ void le_interpret(uint8_t *code_p)
 
 		case 0274 : {
 			// UMOD
+			_HALT
 			uint16_t j = es_pop();
 			uint16_t i = es_pop();
 			es_push(i % j);
@@ -840,6 +944,7 @@ void le_interpret(uint8_t *code_p)
 
 		case 0275 : {
 			// ROR
+			_HALT
 			uint16_t j = es_pop();
 			uint16_t i = es_pop() & 0xf;
 			uint32_t k = (j << 16) >> i;
@@ -849,6 +954,7 @@ void le_interpret(uint8_t *code_p)
 
 		case 0276 : {
 			// SHL
+			_HALT
 			uint16_t j = es_pop();
 			uint16_t i = es_pop() & 0xf;
 			es_push(j << i);
@@ -857,6 +963,7 @@ void le_interpret(uint8_t *code_p)
 
 		case 0277 : {
 			// SHR
+			_HALT
 			uint16_t j = es_pop();
 			uint16_t i = es_pop() & 0xf;
 			es_push(j >> i);
@@ -865,6 +972,7 @@ void le_interpret(uint8_t *code_p)
 
 		case 0300 : {
 			// FOR1  enter FOR statement
+			_HALT
 			uint16_t i = le_next();
 			uint16_t hi = es_pop();
 			uint16_t low = es_pop();
@@ -887,6 +995,7 @@ void le_interpret(uint8_t *code_p)
 
 		case 0301 : {
 			// FOR2  exit FOR statement
+			_HALT
 			uint16_t hi = (*mem_stack)[gs_S - 1];
 			uint16_t adr = (*mem_stack)[gs_S - 2];
 			int16_t sz = le_next();
@@ -907,6 +1016,7 @@ void le_interpret(uint8_t *code_p)
 
 		case 0302 : {
 			// ENTC  enter CASE statement
+			_HALT
 			uint16_t i = le_next2();
 			gs_PC += i - 2;
 			uint16_t k = es_pop();
@@ -922,17 +1032,20 @@ void le_interpret(uint8_t *code_p)
 
 		case 0303 :
 			// EXC  exit CASE statement
+			_HALT
 			gs_PC = (*mem_stack)[--gs_S];
 			break;
 
 		case 0304 : {
 			// TRAP
+			_HALT
 			le_trap(es_pop());
 			break;
 		}
 
 		case 0305 : {
 			// CHK
+			_HALT
 			int16_t k = es_pop();
 			int16_t j = es_pop();
 			int16_t i = es_pop();
@@ -944,6 +1057,7 @@ void le_interpret(uint8_t *code_p)
 
 		case 0306 : {
 			// CHKZ
+			_HALT
 			uint16_t j = es_pop();
 			uint16_t i = es_pop();
 			es_push(i);
@@ -954,6 +1068,7 @@ void le_interpret(uint8_t *code_p)
 
 		case 0307 :
 			// CHKS  check sign bit
+			_HALT
 			int16_t k = es_pop();
 			es_push(k);
 			if (k < 0)
@@ -962,6 +1077,7 @@ void le_interpret(uint8_t *code_p)
 
 		case 0310 : {
 			// EQL
+			_HALT
 			uint16_t j = es_pop();
 			uint16_t i = es_pop();
 			es_push((i == j) ? 1 : 0);
@@ -970,6 +1086,7 @@ void le_interpret(uint8_t *code_p)
 
 		case 0311 : {
 			// NEQ
+			_HALT
 			uint16_t j = es_pop();
 			uint16_t i = es_pop();
 			es_push((i != j) ? 1 : 0);
@@ -978,6 +1095,7 @@ void le_interpret(uint8_t *code_p)
 
 		case 0312 : {
 			// LSS
+			_HALT
 			int16_t j = es_pop();
 			int16_t i = es_pop();
 			es_push((i < j) ? 1 : 0);
@@ -986,6 +1104,7 @@ void le_interpret(uint8_t *code_p)
 
 		case 0313 : {
 			// LEQ
+			_HALT
 			int16_t j = es_pop();
 			int16_t i = es_pop();
 			es_push((i <= j) ? 1 : 0);
@@ -994,6 +1113,7 @@ void le_interpret(uint8_t *code_p)
 
 		case 0314 : {
 			// GTR
+			_HALT
 			int16_t j = es_pop();
 			int16_t i = es_pop();
 			es_push((i > j) ? 1 : 0);
@@ -1002,6 +1122,7 @@ void le_interpret(uint8_t *code_p)
 
 		case 0315 : {
 			// GEQ
+			_HALT
 			int16_t j = es_pop();
 			int16_t i = es_pop();
 			es_push((i >= j) ? 1 : 0);
@@ -1010,6 +1131,7 @@ void le_interpret(uint8_t *code_p)
 
 		case 0316 : {
 			// ABS
+			_HALT
 			int16_t i = es_pop();
 			es_push((i < 0) ? (-i) : i);
 			break;
@@ -1017,6 +1139,7 @@ void le_interpret(uint8_t *code_p)
 
 		case 0317 : {
 			// NEG
+			_HALT
 			int16_t i = es_pop();
 			es_push(-i);
 			break;
@@ -1024,6 +1147,7 @@ void le_interpret(uint8_t *code_p)
 
 		case 0320 : {
 			// OR
+			_HALT
 			uint16_t j = es_pop();
 			uint16_t i = es_pop();
 			es_push(i | j);
@@ -1032,6 +1156,7 @@ void le_interpret(uint8_t *code_p)
 
 		case 0321 : {
 			// XOR
+			_HALT
 			uint16_t j = es_pop();
 			uint16_t i = es_pop();
 			es_push(i ^ j);
@@ -1040,6 +1165,7 @@ void le_interpret(uint8_t *code_p)
 
 		case 0322 : {
 			// AND
+			_HALT
 			uint16_t j = es_pop();
 			uint16_t i = es_pop();
 			es_push(i & j);
@@ -1048,11 +1174,13 @@ void le_interpret(uint8_t *code_p)
 
 		case 0323 :
 			// COM
+			_HALT
 			es_push(~es_pop());
 			break;
 
 		case 0324 : {
 			// IN
+			_HALT
 			uint16_t j = es_pop();
 			uint16_t i = es_pop();
 			if (i > 15)
@@ -1064,11 +1192,13 @@ void le_interpret(uint8_t *code_p)
 
 		case 0325 :
 			// LIN  load immediate NIL
+			_HALT
 			es_push(0xffff);
 			break;
 
 		case 0326 : {
 			// MSK
+			_HALT
 			uint16_t i = es_pop() & 0xf;
 			es_push( 0xffff << (i - 16) );
 			break;
@@ -1076,11 +1206,13 @@ void le_interpret(uint8_t *code_p)
 
 		case 0327 :
 			// NOT
+			_HALT
 			es_push(~es_pop());
 			break;
 
 		case 0330 : {
 			// IADD
+			_HALT
 			int16_t j = es_pop();
 			int16_t i = es_pop();
 			es_push(i + j);
@@ -1089,6 +1221,7 @@ void le_interpret(uint8_t *code_p)
 
 		case 0331 : {
 			// ISUB
+			_HALT
 			int16_t j = es_pop();
 			int16_t i = es_pop();
 			es_push(i - j);
@@ -1097,6 +1230,7 @@ void le_interpret(uint8_t *code_p)
 
 		case 0332 : {
 			// IMUL
+			_HALT
 			int16_t j = es_pop();
 			int16_t i = es_pop();
 			es_push(i * j);
@@ -1105,6 +1239,7 @@ void le_interpret(uint8_t *code_p)
 
 		case 0333 : {
 			// IDIV
+			_HALT
 			int16_t j = es_pop();
 			int16_t i = es_pop();
 			es_push(i / j);
@@ -1113,6 +1248,7 @@ void le_interpret(uint8_t *code_p)
 
 		case 0334 : {
 			// MOD
+			_HALT
 			int16_t j = es_pop();
 			int16_t i = es_pop();
 			es_push(i % j);
@@ -1121,6 +1257,7 @@ void le_interpret(uint8_t *code_p)
 
 		case 0335 : {
 			// BIT
+			_HALT
 			uint16_t j = es_pop() & 0xf;
 			es_push(0x8000 >> j);
 			break;
@@ -1132,6 +1269,7 @@ void le_interpret(uint8_t *code_p)
 
 		case 0337 : {
 			// MOVF  move frame
+			_HALT
 			uint16_t i = es_pop();
 			uint16_t j = es_pop();
 			j += es_pop() << 2;
@@ -1144,6 +1282,7 @@ void le_interpret(uint8_t *code_p)
 
 		case 0340 : {
 			// MOV  move block
+			_HALT
 			uint16_t k = es_pop();
 			uint16_t j = es_pop();
 			uint16_t i = es_pop();
@@ -1154,6 +1293,7 @@ void le_interpret(uint8_t *code_p)
 
 		case 0341 : {
 			// CMP  compare blocks
+			_HALT
 			uint16_t k = es_pop();
 			uint16_t j = es_pop();
 			uint16_t i = es_pop();
@@ -1178,6 +1318,7 @@ void le_interpret(uint8_t *code_p)
 			// DDT  display dot
 //          (* display point at <j,k> in mode i inside
 //             bitmap dbmd *) |
+			_HALT
 			uint16_t k = es_pop();
 			uint16_t j = es_pop();
 			uint16_t dbmd = es_pop();
@@ -1190,6 +1331,7 @@ void le_interpret(uint8_t *code_p)
 			// REPL  replicate pattern
 //          (* replicate pattern sb over block db inside
 //             bitmap dbmd in mode i *) |
+			_HALT
 			uint16_t db = es_pop();
 			uint16_t sb = es_pop();
 			uint16_t dbmd = es_pop();
@@ -1202,6 +1344,7 @@ void le_interpret(uint8_t *code_p)
 			// BBLT  bit block transfer
 //          (* transfer block sb in bitmap sbmd to block db
 //             inside bitmap dbmd in mode i *) |
+			_HALT
 			uint16_t sbmd = es_pop();
 			uint16_t db = es_pop();
 			uint16_t sb = es_pop();
@@ -1215,6 +1358,7 @@ void le_interpret(uint8_t *code_p)
 			// DCH  display character
 //          (* copy bit pattern for character j from font fo
 //             to block db inside bitmap dbmd *) |
+			_HALT
 			uint16_t j = es_pop();
 			uint16_t db = es_pop();
 			uint16_t fo = es_pop();
@@ -1226,6 +1370,7 @@ void le_interpret(uint8_t *code_p)
 		case 0346 : {
 			// UNPK  unpack
 //          (*extract bits i..j from k, then right adjust*)
+			_HALT
 			uint16_t k = es_pop();
 			uint16_t j = es_pop();
 			uint16_t i = es_pop();
@@ -1238,6 +1383,7 @@ void le_interpret(uint8_t *code_p)
 			// PACK  pack
 //          (*pack the rightmost j-i+1 bits of k into positions
 //            i..j of word stk[adr] *) |
+			_HALT
 			uint16_t k = es_pop();
 			uint16_t j = es_pop();
 			uint16_t i = es_pop();
@@ -1249,6 +1395,7 @@ void le_interpret(uint8_t *code_p)
 
 		case 0350 : {
 			// GB  get base adr n levels down
+			_HALT
 			uint16_t i = gs_L;
 			uint16_t j = le_next();
 			do {
@@ -1260,11 +1407,13 @@ void le_interpret(uint8_t *code_p)
 
 		case 0351 :
 			// GB1  get base adr 1 level down
+			_HALT
 			es_push((*mem_stack)[gs_L]);
 			break;
 
 		case 0352 : {
 			// ALLOC  allocate block
+			_HALT
 			uint16_t i = es_pop();
 			es_push(gs_S);
 			gs_S += i;
@@ -1278,6 +1427,7 @@ void le_interpret(uint8_t *code_p)
 
 		case 0353 : {
 			// ENTR  enter procedure
+			_HALT
 			uint16_t i = le_next();
 			gs_S += i;
 			if (gs_S > gs_H)
@@ -1290,6 +1440,7 @@ void le_interpret(uint8_t *code_p)
 
 		case 0354 : {
 			// RTN  return from procedure
+			_HALT
 			gs_S = gs_L;
 			gs_L = (*mem_stack)[gs_S + 1];
 			uint16_t i = (*mem_stack)[gs_S + 2];
@@ -1308,6 +1459,7 @@ void le_interpret(uint8_t *code_p)
 
 		case 0355 : {
 			// CLX  call external procedure
+			_HALT
 			uint16_t j = le_next();
 			uint16_t i = le_next();
 			es_mark(gs_G, true);
@@ -1320,6 +1472,7 @@ void le_interpret(uint8_t *code_p)
 
 		case 0356 : {
 			// CLI  call procedure at intermediate level
+			_HALT
 			uint16_t i = le_next();
 			es_mark(es_pop(), false);
 			gs_PC = i << 1;
@@ -1329,6 +1482,7 @@ void le_interpret(uint8_t *code_p)
 
 		case 0357 : {
 			// CLF  call formal procedure
+			_HALT
 			uint16_t i = (*mem_stack)[gs_S - 1];
 			es_mark(gs_G, true);
 			uint16_t j = i >> 8;
@@ -1341,6 +1495,7 @@ void le_interpret(uint8_t *code_p)
 
 		case 0360 : {
 			// CLL  call local procedure
+			_HALT
 			uint16_t i = le_next();
 			es_mark(gs_L, false);
 			gs_PC = i << 1;
@@ -1350,13 +1505,14 @@ void le_interpret(uint8_t *code_p)
 
 		case 0361 ... 0377 :
 			// CLL1 - CLL15  call local procedure
+			_HALT
 			es_mark(gs_L, false);
 			gs_PC = (gs_IR & 0xf) << 1;
 			gs_PC = le_next2();
 			break;
 
 		default :
-			error(1, 0, "Invalid opcode %d", gs_IR);
+			error(1, 0, "Invalid opcode %03o", gs_IR);
 			break;
 		}
 	} while (gs_PC != 0);

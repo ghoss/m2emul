@@ -6,7 +6,7 @@
 # Published by Guido Hoss under GNU Public License V3.
 #=====================================================
 
-CFLAGS += -DVERSION_BUILD_DATE=\""$(shell date +'%F')"\"
+AM_CFLAGS += -Wall -DVERSION_BUILD_DATE=\""$(shell date +'%F')"\"
 
 bin_PROGRAMS = mule
 

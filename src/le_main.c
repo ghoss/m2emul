@@ -37,12 +37,12 @@ void main(int argc, char *argv[])
 		{
 		case 'h' :
 			// Help information
-			le_usage();
+			le_prog_usage();
 			exit(0);
 
 		case 'V' :
 			// Version information
-			le_version();
+			le_prog_version();
 			exit(0);
 
 		case 'v' :

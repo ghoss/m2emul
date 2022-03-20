@@ -11,7 +11,7 @@
 
 AC_PREREQ([2.71])
 AC_INIT([mule], [0.1-alpha], [])
-AM_INIT_AUTOMAKE([-Werror foreign subdir-objects])
+AM_INIT_AUTOMAKE([-Wall -Werror foreign subdir-objects])
 AC_CONFIG_HEADERS([config.h])
 
 # Checks for programs.

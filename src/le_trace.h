@@ -17,5 +17,6 @@
 // Function declarations
 //
 void le_decode(mod_entry_t *mod, uint16_t pc);
+void le_monitor(mod_entry_t *mod, uint16_t pc);
 
 #endif

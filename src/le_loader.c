@@ -11,6 +11,7 @@
 
 #include "le_mach.h"
 #include "le_trace.h"
+#include "le_mcode.h"
 #include "le_loader.h"
 
 
@@ -103,10 +104,6 @@ void le_expect(FILE *f, uint16_t w)
 void le_parse_objfile(FILE *f)
 {
     uint16_t w, n, a;
-    uint32_t total_code = 0;	// effective code size
-    uint32_t decl_code = 0;		// declared code size
-    uint32_t total_data = 0;	// effective data size
-	uint32_t decl_data = 0;		// declared data size
     mod_entry_t *mod;      // Pointer to current mod in module table
     bool proc_section = true;
     bool eof = false;
@@ -156,9 +153,6 @@ void le_parse_objfile(FILE *f)
                 modid.name, mod->id.idx, 
                 mod->data_sz, mod->code_sz
             )
-
-            decl_data += mod->data_sz;
-            decl_code += mod->code_sz;
             le_rword(f);
             break;
         }
@@ -204,7 +198,6 @@ void le_parse_objfile(FILE *f)
                     );
 
                 // Read data block into memory at offset a
-                total_data += n;
                 if (fread(mod->data + a, n, 1, f) != 1)
                     le_rderr("data");
 
@@ -248,7 +241,6 @@ void le_parse_objfile(FILE *f)
                     );
 
                 // Read code block into memory at offset a
-                total_code += n;
                 if (fread(mod->code + a, n, 1, f) != 1)
                     le_rderr("code");
             }
@@ -475,4 +467,7 @@ bool le_load_initfile(char *fn, char *alt_prefix)
 
     // Fixup all external calls in executable and above
     le_fix_extcalls(top);
+
+	// Start execution of module at procedure 0
+	le_execute(top, 0);
 }
