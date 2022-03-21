@@ -114,7 +114,6 @@ mod_entry_t *init_mod_entry(mod_id_t *mod)
 
         p->id.idx = module_num ++;
         p->id.loaded = false;
-        p->init = false;
         p->import = NULL;
         p->import_n = 0;
         p->code = NULL;
@@ -139,7 +138,6 @@ void init_module_tab()
     strcpy(module_tab->id.name, "System");
     mod_key_t *k = &(module_tab->id.key);
     k->w[0] = k->w[1] = k->w[2] = 0x0000;
-    module_tab->init = false;
     module_tab->id.loaded = true;
 
     // First user module (boot program) gets assigned entry 1
@@ -155,6 +153,10 @@ void mach_init()
     // Stack memory
     if ((mem_stack = malloc(sizeof(mach_stack_t))) == NULL)
         error(1, errno, "Can't allocate stack");
+
+	// Clear first 4 bytes of stack to allow RTN from topmost module
+	bzero(mem_stack, MACH_WORD_SZ << 2);
+	gs_S = 4;
 
     // Allocate and clear expression stack
     gs_SP = 0;

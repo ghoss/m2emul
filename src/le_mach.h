@@ -24,7 +24,8 @@
 
 // Stack and expression stack
 //
-#define MACH_STK_SZ		65535	// Stack size in words
+#define MACH_STK_SZ		65536	// Stack size in bytes
+#define MACH_HEAP_SZ	65536	// Heap size in bytes
 #define MACH_EXSTK_SZ	15		// Expression stack size in words
 
 // Machine word = 16 bits
@@ -72,11 +73,10 @@ typedef struct proctmp_t {
 // Module table entry
 typedef struct {
     mod_id_t id;				// Module name and key
-    bool init;					// FALSE if not initialized yet
     uint8_t *code;				// Pointer to module's code frame
-	uint8_t *data;				// Pointer to module's data frame
+	uint16_t *data;				// Pointer to module's data frame
     uint32_t code_sz;           // Size of code frame in bytes
-    uint32_t data_sz;           // Size of data frame in bytes
+    uint32_t data_sz;           // Size of data frame in words
     // uint16_t *fixup;            // Module code fixup table
     // uint32_t fixup_n;           // Number of entries in fixup table
     proctmp_t *proc_tmp;		// Pointer to temp. procedure linked list

@@ -18,7 +18,7 @@
 #define OUT(...)		fprintf(ofd, __VA_ARGS__);
 
 // Global variables
-bool trace = true;		// Enables trace mode
+bool trace = false;		// Enables trace mode
 
 
 // M-Code mnemonics table
@@ -125,13 +125,13 @@ void le_decode(mod_entry_t *mod, uint16_t pc)
 
         case 034 ... 035 :
             // JPB, JPBC
-            OUT("\t; <-[%o]", pc - (int16_t) a1)
+            OUT("\t; <-[%o]", pc - (int16_t) (a1 - 1))
             break;
             
         case 030 ... 033 :
         case 036 ... 037 :
             // Forward jumps
-            OUT( "\t; ->[%o]", pc + (int16_t) a1)
+            OUT( "\t; ->[%o]", pc + (int16_t) (a1 - 1))
             break;
 
         case 0300 :
@@ -187,7 +187,11 @@ void le_monitor(mod_entry_t *mod, uint16_t pc)
 
 			case 'r' :
 				// Show registers
-				OUT("S=%07o\n", gs_S)
+				OUT("%s: S=%04xh, *S=%04xh, ES=%02xh, *ES=%04xh\n", 
+					mod->id.name, 
+					gs_S, (*mem_stack)[gs_S - 1], 
+					gs_SP, (*mem_exstack)[gs_SP]
+				)
 				break;
 
 			case 'h' :

@@ -1,6 +1,6 @@
 //=====================================================
 // le_stack.c
-// Expression Stack Functions
+// Stack and Expression Stack Functions
 // 
 // Lilith M-Code Emulator
 //
@@ -127,16 +127,23 @@ void es_restore_regs(bool chg_mask)
 }
 
 
-// es_mark()
+// stk_mark()
 // 
-void es_mark(uint16_t x, bool ext)
+void stk_mark(uint16_t x, bool ext)
 {
     uint16_t i = gs_S;
 
-    (*mem_stack)[gs_S ++] = x;
-    (*mem_stack)[gs_S ++] = gs_L;
+	// S + 0 = flag: 1 if external call, 0 if local call
+	(*mem_stack)[i] = ext ? 1 : 0;	
 
-    (*mem_stack)[gs_S] = ext ? (gs_PC + 0100000) : gs_PC;
-    gs_S += 2;
+	// S + 1 = previous module number or local ptr
+	(*mem_stack)[i + 1] = x;
+
+	// S + 2 = previous local proc. data ptr
+	// S + 3 = previous PC
+	(*mem_stack)[i + 2] = gs_L;
+    (*mem_stack)[i + 3] = gs_PC;
+
+    gs_S += 4;
     gs_L = i;
 }

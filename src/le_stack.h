@@ -1,6 +1,6 @@
 //=====================================================
 // le_stack.h
-// Expression Stack Functions
+// Stack and Expression Stack Functions
 // 
 // Lilith M-Code Emulator
 //
@@ -32,6 +32,6 @@ void es_dpush(floatword_t d);
 floatword_t es_dpop();
 void es_save();
 void es_restore();
-void es_mark(uint16_t x, bool ext);
+void stk_mark(uint16_t x, bool ext);
 
 #endif

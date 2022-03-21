@@ -142,14 +142,14 @@ void le_parse_objfile(FILE *f)
                 le_skip(f, 6);
 
             // Allocate memory for module's code and data
-            mod->data_sz = le_rword(f) << 1;
-            mod->code_sz = le_rword(f) << 1;
-            if ((((mod->data = calloc(mod->data_sz, 1))) == NULL)
+            mod->data_sz = le_rword(f);			// words
+            mod->code_sz = le_rword(f) << 1;	// bytes
+            if ((((mod->data = calloc(mod->data_sz, MACH_WORD_SZ))) == NULL)
                 || (((mod->code = calloc(mod->code_sz, 1)) == NULL)))
                 le_memerr();
 
             VERBOSE(
-                "Module %s [%d], %d/%d bytes (data/code)\n", 
+                "Module %s [%d], %d data words/%d code bytes\n", 
                 modid.name, mod->id.idx, 
                 mod->data_sz, mod->code_sz
             )
@@ -188,8 +188,8 @@ void le_parse_objfile(FILE *f)
 
         case 0204 : {
                 // Data sections
-                n = (le_rword(f) << 1) - 2;
-                a = le_rword(f) << 1;
+                n = le_rword(f) - 1;	// Number of words
+                a = le_rword(f);		// Offset in words
 
                 // Check for data frame overrun
                 if (a + n > mod->data_sz)
@@ -198,7 +198,7 @@ void le_parse_objfile(FILE *f)
                     );
 
                 // Read data block into memory at offset a
-                if (fread(mod->data + a, n, 1, f) != 1)
+                if (fread(mod->data + a, MACH_WORD_SZ, n, f) != n)
                     le_rderr("data");
 
                 break;
@@ -320,7 +320,7 @@ void le_fix_extcalls(uint8_t top)
 
 					switch (opc)
 					{
-						case 043 :	// LED 
+						case 043 :	// LED
 						case 063 :	// SED
 						case 027 :	// LEA
 						case 042 :	// LEW
@@ -466,6 +466,7 @@ bool le_load_initfile(char *fn, char *alt_prefix)
     le_fix_extcalls(top);
 
 	// Start execution of module at procedure 0
-	VERBOSE("Starting execution.\n\n")
+	VERBOSE("Starting execution.\n")
 	le_execute(top, 0);
+	VERBOSE("Execution terminated normally.\n\n")
 }
