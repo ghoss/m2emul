@@ -24,16 +24,15 @@
 
 // Stack and expression stack
 //
-#define MACH_STK_SZ		65536	// Stack size in bytes
-#define MACH_HEAP_SZ	65536	// Heap size in bytes
+#define MACH_STK_SZ		65536	// Stack size in words
+#define MACH_HEAP_SZ	65536	// Heap size in words
 #define MACH_EXSTK_SZ	15		// Expression stack size in words
 
 // Machine word = 16 bits
 #define MACH_WORD_SZ    sizeof(uint16_t)
 
 // Stack Memory
-typedef uint16_t mach_stack_t[MACH_STK_SZ];
-extern mach_stack_t *mem_stack;
+extern uint16_t *stack;
 
 // Expression stack
 typedef uint16_t mach_exstack_t[MACH_EXSTK_SZ];
@@ -77,14 +76,14 @@ typedef struct {
 	uint16_t *data;				// Pointer to module's data frame
     uint32_t code_sz;           // Size of code frame in bytes
     uint32_t data_sz;           // Size of data frame in words
-    // uint16_t *fixup;            // Module code fixup table
-    // uint32_t fixup_n;           // Number of entries in fixup table
     proctmp_t *proc_tmp;		// Pointer to temp. procedure linked list
     uint16_t *proc;             // Pointer to final procedure table
     uint16_t proc_n;            // Number of entries in procedure table
     mod_id_t *import;	    	// Pointer to table of imported modules
     uint8_t import_n;           // Number of entries in import table
 } mod_entry_t;
+
+extern mod_entry_t *module_tab;		// Pointer to module table
 
 
 // Global State Variables
@@ -107,7 +106,6 @@ extern uint16_t gs_ReqNo;	// Request number, 8..15
 //
 void mach_init();
 uint8_t mach_num_modules();
-mod_entry_t *find_mod_index(uint8_t i);
 mod_entry_t *find_mod_entry(mod_id_t *mod_id);
 mod_entry_t *init_mod_entry(mod_id_t *mod_id);
 

@@ -14,8 +14,8 @@
 
 // Memory structures defined in le_mach.h
 //
-mach_stack_t *mem_stack;
 mach_exstack_t *mem_exstack;
+uint16_t *stack;
 
 uint16_t gs_PC;
 uint16_t gs_IR;
@@ -41,15 +41,6 @@ uint8_t module_num = 1;	    // Number of modules in table
 uint8_t mach_num_modules()
 {
     return module_num;
-}
-
-
-// find_mod_index()
-// Returns the module entry given by the specified index
-//
-mod_entry_t *find_mod_index(uint8_t i)
-{
-    return &(module_tab[i]);
 }
 
 
@@ -151,14 +142,14 @@ void init_module_tab()
 void mach_init()
 {
     // Stack memory
-    if ((mem_stack = malloc(sizeof(mach_stack_t))) == NULL)
+    if ((stack = malloc(MACH_WORD_SZ * MACH_STK_SZ)) == NULL)
 	{
         error(1, errno, "Can't allocate stack");
 	}
 
-	// Clear first 4 bytes of stack to allow RTN from topmost module
-	bzero(mem_stack, MACH_WORD_SZ << 2);
-	gs_S = 4;
+	// Clear first 3 words of stack to allow RTN from topmost module
+	bzero(stack, MACH_WORD_SZ * 3);
+	gs_S = 3;
 
     // Allocate and clear expression stack
     gs_SP = 0;

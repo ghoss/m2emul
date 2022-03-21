@@ -284,7 +284,7 @@ void le_fix_extcalls(uint8_t top)
     while (top < max)
     {
 		uint16_t n;
-        mod_entry_t *mod = find_mod_index(top);
+        mod_entry_t *mod = &(module_tab[top]);
 
         if (! mod->id.loaded)
             error(1, 0, "Module %s missing after load", mod->id.name);
@@ -436,7 +436,7 @@ bool le_load_objfile(char *fn, char *alt_prefix)
     while (top < mach_num_modules())
     {
         // Check all entries in module table
-        mod_entry_t *p = find_mod_index(top);
+        mod_entry_t *p = &(module_tab[top]);
 
         if (! p->id.loaded)
         {

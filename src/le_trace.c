@@ -153,7 +153,7 @@ void le_decode(mod_entry_t *mod, uint16_t pc)
 
 		case 0355 :
 			// CLX
-			OUT("\t; ->%s.%d", find_mod_index(a1)->id.name, b1)
+			OUT("\t; ->%s.%d", module_tab[a1].id.name, b1)
 			break;
     }
     OUT("\n")
@@ -189,7 +189,7 @@ void le_monitor(mod_entry_t *mod, uint16_t pc)
 				// Show registers
 				OUT("%s: S=%04xh, *S=%04xh, ES=%02xh, *ES=%04xh\n", 
 					mod->id.name, 
-					gs_S, (*mem_stack)[gs_S - 1], 
+					gs_S, stack[gs_S - 1], 
 					gs_SP, (*mem_exstack)[gs_SP]
 				)
 				break;

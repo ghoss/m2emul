@@ -28,9 +28,9 @@ void le_transfer(bool chg, uint16_t to, uint16_t from)
 {
 	uint16_t j;
 
-	j = (*mem_stack)[to];
+	j = stack[to];
 	es_save_regs();
-	(*mem_stack)[from] = gs_P;
+	stack[from] = gs_P;
 	gs_P = j;
 	es_restore_regs(chg);
 }
@@ -42,9 +42,9 @@ void le_transfer(bool chg, uint16_t to, uint16_t from)
 void le_trap(uint16_t n)
 {
 	error(1, 0, "It's a TRAP! (%d)", n);
-	if (((1 << n) & (*mem_stack)[gs_P + 7]) == 0)
+	if (((1 << n) & stack[gs_P + 7]) == 0)
 	{
-		(*mem_stack)[gs_P + 6] = n;
+		stack[gs_P + 6] = n;
 		le_transfer(true, MCI_TLCADR, MCI_TLCADR + 1);
 	}
 }
@@ -85,7 +85,7 @@ void le_execute(uint16_t modn, uint16_t procn)
 	void set_module_ptr(uint16_t mod)
 	{
 		modn = mod;
-		modp = find_mod_index(mod);
+		modp = &(module_tab[mod]);
 		code_p = modp->code;
 		data_p = modp->data;
 	}
@@ -94,7 +94,7 @@ void le_execute(uint16_t modn, uint16_t procn)
 	set_module_ptr(modn);
 	gs_PC = modp->proc[procn];
 
-	// gs_P = (*mem_stack)[4];
+	// gs_P = stack[4];
 	// es_restore_regs(true);
 
 	do {
@@ -157,7 +157,7 @@ void le_execute(uint16_t modn, uint16_t procn)
 			_HALT
 			uint16_t i = le_next();
 			uint16_t j = le_next();
-			es_push((*mem_stack)[MCI_DFTADR + i] + j);
+			es_push(stack[MCI_DFTADR + i] + j);
 			break;
 		}
 
@@ -258,14 +258,14 @@ void le_execute(uint16_t modn, uint16_t procn)
 
 		case 040 :
 			// LLW  load local word
-			es_push((*mem_stack)[gs_L + le_next()]);
+			es_push(stack[gs_L + le_next()]);
 			break;
 
 		case 041 : {
 			// LLD  load local double word
 			uint16_t i = gs_L + le_next();
-			es_push((*mem_stack)[i]);
-			es_push((*mem_stack)[i + 1]);
+			es_push(stack[i]);
+			es_push(stack[i + 1]);
 			break;
 		}
 
@@ -274,7 +274,7 @@ void le_execute(uint16_t modn, uint16_t procn)
 			_HALT
 			uint16_t i = le_next();
 			uint16_t j = le_next();
-			es_push((*mem_stack)[(*mem_stack)[MCI_DFTADR + i] + j]);
+			es_push(stack[stack[MCI_DFTADR + i] + j]);
 			break;
 		}
 
@@ -283,27 +283,27 @@ void le_execute(uint16_t modn, uint16_t procn)
 			_HALT
 			uint16_t i = le_next();
 			uint16_t j = le_next();
-			uint16_t k = (*mem_stack)[MCI_DFTADR + i] + j;
-			es_push((*mem_stack)[k]);
-			es_push((*mem_stack)[k + 1]);
+			uint16_t k = stack[MCI_DFTADR + i] + j;
+			es_push(stack[k]);
+			es_push(stack[k + 1]);
 			break;
 		}
 
 		case 044 ... 057 :
 			// LLW4-LLW15
-			es_push((*mem_stack)[gs_L + (gs_IR & 0xf)]);
+			es_push(stack[gs_L + (gs_IR & 0xf)]);
 			break;
 
 		case 060 :
 			// SLW  store local word
-			(*mem_stack)[gs_L + le_next()] = es_pop();
+			stack[gs_L + le_next()] = es_pop();
 			break;
 
 		case 061 : {
 			// SLD  store local double word
 			uint16_t i = gs_L + le_next();
-			(*mem_stack)[i + 1] = es_pop();
-			(*mem_stack)[i] = es_pop();
+			stack[i + 1] = es_pop();
+			stack[i] = es_pop();
 			break;
 		}
 
@@ -312,7 +312,7 @@ void le_execute(uint16_t modn, uint16_t procn)
 			_HALT
 			uint16_t i = le_next();
 			uint16_t j = le_next();
-			(*mem_stack)[(*mem_stack)[MCI_DFTADR + i] + j] = es_pop();
+			stack[stack[MCI_DFTADR + i] + j] = es_pop();
 			break;
 		}
 
@@ -321,15 +321,15 @@ void le_execute(uint16_t modn, uint16_t procn)
 			_HALT
 			uint16_t i = le_next();
 			uint16_t j = le_next();
-			uint16_t k = (*mem_stack)[(*mem_stack)[MCI_DFTADR + i] + j];
-			(*mem_stack)[k + 1] = es_pop();
-			(*mem_stack)[k] = es_pop();
+			uint16_t k = stack[stack[MCI_DFTADR + i] + j];
+			stack[k + 1] = es_pop();
+			stack[k] = es_pop();
 			break;
 		}
 
 		case 064 ... 077 :
 			// SLW4-SLW15  store local word
-			(*mem_stack)[gs_L + (gs_IR & 0xf)] = es_pop();
+			stack[gs_L + (gs_IR & 0xf)] = es_pop();
 			break;
 
 		case 0100 :
@@ -359,8 +359,8 @@ void le_execute(uint16_t modn, uint16_t procn)
 			// SGD  store global double word
 			_HALT
 			uint16_t i = le_next() + gs_G;
-			(*mem_stack)[i + 1] = es_pop();
-			(*mem_stack)[i] = es_pop();
+			stack[i + 1] = es_pop();
+			stack[i] = es_pop();
 			break;
 		}
 
@@ -372,7 +372,7 @@ void le_execute(uint16_t modn, uint16_t procn)
 		case 0140 ... 0157 :
 			// LSW0 - LSW15  load stack addressed word
 			_HALT
-			es_push((*mem_stack)[es_pop() + (gs_IR & 0xf)]);
+			es_push(stack[es_pop() + (gs_IR & 0xf)]);
 			break;
 
 		case 0160 ... 0177 : {
@@ -380,7 +380,7 @@ void le_execute(uint16_t modn, uint16_t procn)
 			_HALT
 			uint16_t k = es_pop();
 			uint16_t i = es_pop() + (gs_IR & 0xf);
-			(*mem_stack)[i] = k;
+			stack[i] = k;
 			break;
 		}
 
@@ -388,7 +388,7 @@ void le_execute(uint16_t modn, uint16_t procn)
 			// LSW  load stack word
 			_HALT
 			uint16_t i = es_pop() + le_next();
-			es_push((*mem_stack)[i]);
+			es_push(stack[i]);
 			break;
 		}
 
@@ -396,8 +396,8 @@ void le_execute(uint16_t modn, uint16_t procn)
 			// LSD  load stack double word
 			_HALT
 			uint16_t i = es_pop() + le_next();
-			es_push((*mem_stack)[i]);
-			es_push((*mem_stack)[i + 1]);
+			es_push(stack[i]);
+			es_push(stack[i + 1]);
 			break;
 		}
 
@@ -405,8 +405,8 @@ void le_execute(uint16_t modn, uint16_t procn)
 			// LSD0  load stack double word
 			_HALT
 			uint16_t i = es_pop();
-			es_push((*mem_stack)[i]);
-			es_push((*mem_stack)[i + 1]);
+			es_push(stack[i]);
+			es_push(stack[i + 1]);
 			break;
 		}
 
@@ -415,14 +415,14 @@ void le_execute(uint16_t modn, uint16_t procn)
 			_HALT
 			uint16_t i = es_pop();
 			i += es_pop() << 2;
-			es_push((*mem_stack)[i]);
+			es_push(stack[i]);
 			break;
 		}
 
 		case 0204 :
 			// LSTA  load string address
 			_HALT
-			es_push((*mem_stack)[gs_G + 2] + le_next());
+			es_push(stack[gs_G + 2] + le_next());
 			break;
 
 		case 0205 : {
@@ -430,7 +430,7 @@ void le_execute(uint16_t modn, uint16_t procn)
 			_HALT
 			uint16_t i = es_pop();
 			uint16_t j = es_pop();
-			uint16_t k = (*mem_stack)[j + (i >> 1)];
+			uint16_t k = stack[j + (i >> 1)];
 			es_push((i & 1) ? (k & 0xff) : (k >> 8));
 			break;
 		}
@@ -440,7 +440,7 @@ void le_execute(uint16_t modn, uint16_t procn)
 			_HALT
 			uint16_t i = es_pop();
 			i += es_pop();
-			es_push((*mem_stack)[i]);
+			es_push(stack[i]);
 			break;
 		}
 
@@ -449,8 +449,8 @@ void le_execute(uint16_t modn, uint16_t procn)
 			_HALT
 			uint16_t i = es_pop() << 1;
 			i += es_pop();
-			es_push((*mem_stack)[i]);
-			es_push((*mem_stack)[i + 1]);
+			es_push(stack[i]);
+			es_push(stack[i + 1]);
 			break;
 		}
 
@@ -517,7 +517,7 @@ void le_execute(uint16_t modn, uint16_t procn)
 			_HALT
 			uint16_t k = es_pop();
 			uint16_t i = es_pop() + le_next();
-			(*mem_stack)[i] = k;
+			stack[i] = k;
 			break;
 		}
 
@@ -527,8 +527,8 @@ void le_execute(uint16_t modn, uint16_t procn)
 			uint16_t k = es_pop();
 			uint16_t j = es_pop();
 			uint16_t i = es_pop() + le_next();
-			(*mem_stack)[i] = j;
-			(*mem_stack)[i + 1] = k;
+			stack[i] = j;
+			stack[i + 1] = k;
 			break;
 		}
 
@@ -538,8 +538,8 @@ void le_execute(uint16_t modn, uint16_t procn)
 			uint16_t k = es_pop();
 			uint16_t j = es_pop();
 			uint16_t i = es_pop();
-			(*mem_stack)[i] = j;
-			(*mem_stack)[i + 1] = k;
+			stack[i] = j;
+			stack[i + 1] = k;
 			break;
 		}
 
@@ -549,7 +549,7 @@ void le_execute(uint16_t modn, uint16_t procn)
 			uint16_t i = es_pop();
 			uint16_t k = es_pop();
 			k += es_pop() << 2;
-			(*mem_stack)[k] = i;
+			stack[k] = i;
 			break;
 		}
 
@@ -571,10 +571,10 @@ void le_execute(uint16_t modn, uint16_t procn)
 			uint16_t j = es_pop() + (i >> 1);
 			if (i & 1)
 			{
-				(*mem_stack)[j] = ((*mem_stack)[j] & 0xff00) + k;
+				stack[j] = (stack[j] & 0xff00) + k;
 			}
 			else{
-				(*mem_stack)[j] = (k << 8) | ((*mem_stack)[j] & 0xff);
+				stack[j] = (k << 8) | (stack[j] & 0xff);
 			}
 			break;
 		}
@@ -585,7 +585,7 @@ void le_execute(uint16_t modn, uint16_t procn)
 			uint16_t k = es_pop();
 			uint16_t i = es_pop();
 			i += es_pop();
-			(*mem_stack)[i] = k;
+			stack[i] = k;
 			break;
 		}
 
@@ -596,8 +596,8 @@ void le_execute(uint16_t modn, uint16_t procn)
 			uint16_t j = es_pop();
 			uint16_t i = es_pop() << 2;
 			i += es_pop();
-			(*mem_stack)[i] = j;
-			(*mem_stack)[i + 1] = k;
+			stack[i] = j;
+			stack[i + 1] = k;
 			break;
 		}
 
@@ -710,7 +710,7 @@ void le_execute(uint16_t modn, uint16_t procn)
 			_HALT
 			uint16_t i = es_pop();
 			uint16_t k = es_pop();
-			(*mem_stack)[i] = le_ioread(k);
+			stack[i] = le_ioread(k);
 			break;
 		}
 
@@ -763,14 +763,14 @@ void le_execute(uint16_t modn, uint16_t procn)
 		case 0250 :
 			// ENTP  entry priority
 			_HALT
-			(*mem_stack)[gs_L + 3] = gs_M;
+			stack[gs_L + 3] = gs_M;
 			gs_M = 0xffff << (16 - le_next());
 			break;
 
 		case 0251 :
 			// EXP  exit priority
 			_HALT
-			gs_M = (*mem_stack)[gs_L + 3];
+			gs_M = stack[gs_L + 3];
 			break;
 
 		case 0252 : {
@@ -824,7 +824,7 @@ void le_execute(uint16_t modn, uint16_t procn)
 			uint16_t k = es_pop();
 			int i = le_next();
 			do {
-				(*mem_stack)[k++] = le_next2();
+				stack[k++] = le_next2();
 			} while (i-- >= 0);
 			break;
 		}
@@ -859,14 +859,14 @@ void le_execute(uint16_t modn, uint16_t procn)
 			_HALT
 			uint16_t i = es_pop();
 			es_save();
-			(*mem_stack)[gs_S ++] = i;
+			stack[gs_S ++] = i;
 			break;
 		}
 
 		case 0264 :
 			// STOT  copy from stack to procedure stack
 			_HALT
-			(*mem_stack)[gs_S ++] = es_pop();
+			stack[gs_S ++] = es_pop();
 			break;
 
 		case 0265 : {
@@ -886,11 +886,11 @@ void le_execute(uint16_t modn, uint16_t procn)
 
 		case 0267 : {
 			// PCOP  allocation and copy of value parameter
-			(*mem_stack)[gs_L + le_next()] = gs_S;
+			stack[gs_L + le_next()] = gs_S;
 			uint16_t sz = es_pop();
 			uint16_t adr = es_pop();
 			while (sz-- > 0)
-				(*mem_stack)[gs_S++] = (*mem_stack)[adr++];
+				stack[gs_S++] = stack[adr++];
 			break;
 		}
 
@@ -977,9 +977,9 @@ void le_execute(uint16_t modn, uint16_t procn)
 			if (((i == 0) && (low <= hi))
 				|| ((i != 0) && (low >= hi)))
 			{
-				(*mem_stack)[adr] = low;
-				(*mem_stack)[gs_S++] = adr;
-				(*mem_stack)[gs_S++] = hi;
+				stack[adr] = low;
+				stack[gs_S++] = adr;
+				stack[gs_S++] = hi;
 			}
 			else
 			{
@@ -991,19 +991,19 @@ void le_execute(uint16_t modn, uint16_t procn)
 		case 0301 : {
 			// FOR2  exit FOR statement
 			_HALT
-			uint16_t hi = (*mem_stack)[gs_S - 1];
-			uint16_t adr = (*mem_stack)[gs_S - 2];
+			uint16_t hi = stack[gs_S - 1];
+			uint16_t adr = stack[gs_S - 2];
 			int16_t sz = le_next();
 			uint16_t k = gs_PC;
 			k += le_next2() - 2;
-			uint16_t i = (*mem_stack)[adr] + sz;
+			uint16_t i = stack[adr] + sz;
 			if (((sz >= 0) && (i > hi)) || ((sz <= 0) && (i < hi)))
 			{
 				gs_S -= 2;
 			}
 			else
 			{
-				(*mem_stack)[adr] = i;
+				stack[adr] = i;
 				gs_PC = k;
 			}
 			break;
@@ -1017,7 +1017,7 @@ void le_execute(uint16_t modn, uint16_t procn)
 			uint16_t k = es_pop();
 			uint16_t low = le_next2();
 			uint16_t hi = le_next2();
-			(*mem_stack)[gs_S++] = gs_PC + ((hi - low) << 1) + 4;
+			stack[gs_S++] = gs_PC + ((hi - low) << 1) + 4;
 			if ((k >= low) && (k <= hi))
 				gs_PC += (k - low + 1) << 1;
 			i = le_next2();
@@ -1028,7 +1028,7 @@ void le_execute(uint16_t modn, uint16_t procn)
 		case 0303 :
 			// EXC  exit CASE statement
 			_HALT
-			gs_PC = (*mem_stack)[--gs_S];
+			gs_PC = stack[--gs_S];
 			break;
 
 		case 0304 : {
@@ -1266,7 +1266,7 @@ void le_execute(uint16_t modn, uint16_t procn)
 			uint16_t k = es_pop();
 			k += es_pop() << 2;
 			while (i-- > 0)
-				(*mem_stack)[k++] = (*mem_stack[j++]);
+				stack[k ++] = stack[j ++];
 			break;
 		}
 
@@ -1277,7 +1277,7 @@ void le_execute(uint16_t modn, uint16_t procn)
 			uint16_t j = es_pop();
 			uint16_t i = es_pop();
 			while (k-- > 0)
-				(*mem_stack)[i ++] = (*mem_stack)[j ++];
+				stack[i ++] = stack[j ++];
 			break;
 		}
 
@@ -1294,12 +1294,12 @@ void le_execute(uint16_t modn, uint16_t procn)
 			}
 			else
 			{
-				while (((*mem_stack)[i] != (*mem_stack)[j]) && (k > 0))
+				while ((stack[i] != stack[j]) && (k > 0))
 				{
 					i ++; j++; k--;
 				}
-				es_push((*mem_stack)[i]);
-				es_push((*mem_stack)[j]);
+				es_push(stack[i]);
+				es_push(stack[j]);
 			}
 			break;
 		}
@@ -1383,7 +1383,7 @@ void le_execute(uint16_t modn, uint16_t procn)
 			uint16_t i = gs_L;
 			uint16_t j = le_next();
 			do {
-				i = (*mem_stack)[i];
+				i = stack[i];
 			} while (--j != 0);
 			es_push(i);
 			break;
@@ -1392,7 +1392,7 @@ void le_execute(uint16_t modn, uint16_t procn)
 		case 0351 :
 			// GB1  get base adr 1 level down
 			_HALT
-			es_push((*mem_stack)[gs_L]);
+			es_push(stack[gs_L]);
 			break;
 
 		case 0352 : {
@@ -1425,12 +1425,12 @@ void le_execute(uint16_t modn, uint16_t procn)
 			gs_S = gs_L;
 
 			// Restore caller status from stack
-			gs_L = (*mem_stack)[gs_S + 1];
-			gs_PC = (*mem_stack)[gs_S + 2];
+			gs_L = stack[gs_S + 1];
+			gs_PC = stack[gs_S + 2];
 
-			if ((*mem_stack)[gs_S] & 0xff00)
+			if (stack[gs_S] & 0xff00)
 				// External call
-				set_module_ptr((*mem_stack)[gs_S & 0xff]);
+				set_module_ptr(stack[gs_S] & 0xff);
 			break;
 		}
 
@@ -1461,11 +1461,11 @@ void le_execute(uint16_t modn, uint16_t procn)
 		case 0357 : {
 			// CLF  call formal procedure
 			_HALT
-			uint16_t i = (*mem_stack)[gs_S - 1];
+			uint16_t i = stack[gs_S - 1];
 			stk_mark(gs_G, true);
 			uint16_t j = i >> 8;
-			gs_G = (*mem_stack)[MCI_DFTADR + j];
-			gs_F = (*mem_stack)[gs_G];
+			gs_G = stack[MCI_DFTADR + j];
+			gs_F = stack[gs_G];
 			gs_PC = (i & 0xff) << 1;
 			gs_PC = le_next2();
 			break;

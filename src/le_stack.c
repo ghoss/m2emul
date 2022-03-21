@@ -73,10 +73,10 @@ void es_save()
     c = 0;
     while (! es_empty())
     {
-        (*mem_stack)[gs_S ++] = es_pop();
+        stack[gs_S ++] = es_pop();
         c ++;
     }
-    (*mem_stack)[gs_S ++] = c;
+    stack[gs_S ++] = c;
 }
 
 
@@ -87,9 +87,9 @@ void es_restore()
 {
     uint16_t c;
 
-    c = (*mem_stack)[--gs_S];
+    c = stack[--gs_S];
     while (c-- > 0)
-        es_push((*mem_stack)[--gs_S]);
+        es_push(stack[--gs_S]);
 }
 
 
@@ -99,12 +99,12 @@ void es_restore()
 void es_save_regs()
 {
     es_save();
-    (*mem_stack)[gs_P] = gs_G;
-    (*mem_stack)[gs_P + 1] = gs_L;
-    (*mem_stack)[gs_P + 2] = gs_PC;
-    (*mem_stack)[gs_P + 3] = gs_M;
-    (*mem_stack)[gs_P + 4] = gs_S;
-    (*mem_stack)[gs_P + 5] = gs_H + 24;
+    stack[gs_P] = gs_G;
+    stack[gs_P + 1] = gs_L;
+    stack[gs_P + 2] = gs_PC;
+    stack[gs_P + 3] = gs_M;
+    stack[gs_P + 4] = gs_S;
+    stack[gs_P + 5] = gs_H + 24;
 }
 
 
@@ -113,16 +113,16 @@ void es_save_regs()
 //
 void es_restore_regs(bool chg_mask)
 {
-    gs_G = (*mem_stack)[gs_P];
-    gs_F = (*mem_stack)[gs_G];
-    gs_L = (*mem_stack)[gs_P + 1];
-    gs_PC = (*mem_stack)[gs_P + 2];
+    gs_G = stack[gs_P];
+    gs_F = stack[gs_G];
+    gs_L = stack[gs_P + 1];
+    gs_PC = stack[gs_P + 2];
 
     if (chg_mask)
-        gs_M = (*mem_stack)[gs_P + 3];
+        gs_M = stack[gs_P + 3];
     
-    gs_S = (*mem_stack)[gs_P + 4];
-    gs_H = (*mem_stack)[gs_P + 5] - 24;
+    gs_S = stack[gs_P + 4];
+    gs_H = stack[gs_P + 5] - 24;
     es_restore();
 }
 
@@ -134,12 +134,12 @@ void stk_mark(uint16_t x, bool ext)
     uint16_t i = gs_S;
 
 	// S + 0 = previous module number + high bit set or zero for local call
-	(*mem_stack)[i] = ext ? (x | 0xff00) : x;
+	stack[i] = ext ? (x | 0xff00) : x;
 
 	// S + 1 = previous local proc. data ptr
 	// S + 2 = previous PC
-	(*mem_stack)[i + 1] = gs_L;
-    (*mem_stack)[i + 2] = gs_PC;
+	stack[i + 1] = gs_L;
+    stack[i + 2] = gs_PC;
 
     gs_S += 3;
     gs_L = i;
