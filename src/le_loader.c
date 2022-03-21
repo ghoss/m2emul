@@ -104,7 +104,7 @@ void le_expect(FILE *f, uint16_t w)
 void le_parse_objfile(FILE *f)
 {
     uint16_t w, n, a;
-    mod_entry_t *mod;      // Pointer to current mod in module table
+    mod_entry_t *mod = NULL;	// Pointer to current mod in module table
     bool proc_section = true;
     bool eof = false;
 
@@ -287,7 +287,7 @@ void le_fix_extcalls(uint8_t top)
         mod_entry_t *mod = find_mod_index(top);
 
         if (! mod->id.loaded)
-            error(1, 0, "Module %s missing after load");
+            error(1, 0, "Module %s missing after load", mod->id.name);
         
 		// Part 1: Create final procedure table
 		n = mod->proc_n;
@@ -316,7 +316,6 @@ void le_fix_extcalls(uint8_t top)
 					// Fixup location depending on opcode in [loc-1]
 					uint8_t opc = mod->code[loc - 1];
 					uint8_t b1 = mod->code[loc];
-					uint8_t midx, b2;
 
 					switch (opc)
 					{
@@ -329,7 +328,7 @@ void le_fix_extcalls(uint8_t top)
 							// Change first opbyte to absolute index of module
 							if (b1 > mod->import_n)
 								error(1, 0, 
-									"%: %07o opc %03o illegal module #%03o", 
+									"%s: %07o opc %03o illegal module #%03o", 
 									mod->id.name, loc - 1, opc, b1
 								);
 							mod->code[loc] = mod->import[b1 - 1].idx;
@@ -443,10 +442,11 @@ bool le_load_objfile(char *fn, char *alt_prefix)
         {
             // Try to load this module
             if (! le_load_objfile(p->id.name, "LIB."))
-                break;
+                return false;
         }
         top ++;
     }
+	return true;
 }
 
 
@@ -469,4 +469,5 @@ bool le_load_initfile(char *fn, char *alt_prefix)
 	VERBOSE("Starting execution.\n")
 	le_execute(top, 0);
 	VERBOSE("Execution terminated normally.\n\n")
+	return true;
 }

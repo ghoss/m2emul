@@ -19,6 +19,7 @@
 uint16_t le_ioread(uint16_t chan)
 {
     error(1, 0, "READ not implemented (%d)", chan);
+	return 0;
 }
 
 

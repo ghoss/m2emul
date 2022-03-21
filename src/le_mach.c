@@ -152,7 +152,9 @@ void mach_init()
 {
     // Stack memory
     if ((mem_stack = malloc(sizeof(mach_stack_t))) == NULL)
+	{
         error(1, errno, "Can't allocate stack");
+	}
 
 	// Clear first 4 bytes of stack to allow RTN from topmost module
 	bzero(mem_stack, MACH_WORD_SZ << 2);

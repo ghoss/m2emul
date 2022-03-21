@@ -49,8 +49,8 @@ char *mnem_tab =
 //
 void le_decode(mod_entry_t *mod, uint16_t pc)
 {
-    uint16_t a1;
-    uint8_t b1;
+    uint16_t a1 = 0;
+    uint8_t b1 = 0;
 	FILE *ofd = stdout;
 
     // Print octal byte
@@ -177,7 +177,7 @@ void le_monitor(mod_entry_t *mod, uint16_t pc)
 	// Enter command loop
 	do {
 		printf("cmd> ");
-		scanf("%63s", &c);
+		scanf("%63s", &(c[0]));
 
 		switch (c[0])
 		{
@@ -200,7 +200,7 @@ void le_monitor(mod_entry_t *mod, uint16_t pc)
 				le_monitor_usage();
 				break;
 
-			case 'x' :
+			case 't' :
 				// Do nothing (will exit)
 				break;
 
@@ -212,5 +212,5 @@ void le_monitor(mod_entry_t *mod, uint16_t pc)
 				error(0, 0, "Invalid monitor command, press 'h' for help");
 				break;
 		}
-	} while (c[0] != 'x');
+	} while (c[0] != 't');
 }

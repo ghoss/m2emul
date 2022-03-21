@@ -23,11 +23,9 @@ bool verbose = false;	// Checked by all procedures to enable verbosity
 
 // main
 //
-void main(int argc, char *argv[])
+int main(int argc, char *argv[])
 {
 	char c;
-	char *in_file = NULL;
-	FILE *in_fd = NULL;
 
 	// Parse command line options
 	opterr = 0;

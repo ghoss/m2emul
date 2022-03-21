@@ -133,17 +133,14 @@ void stk_mark(uint16_t x, bool ext)
 {
     uint16_t i = gs_S;
 
-	// S + 0 = flag: 1 if external call, 0 if local call
-	(*mem_stack)[i] = ext ? 1 : 0;	
+	// S + 0 = previous module number + high bit set or zero for local call
+	(*mem_stack)[i] = ext ? (x | 0xff00) : x;
 
-	// S + 1 = previous module number or local ptr
-	(*mem_stack)[i + 1] = x;
+	// S + 1 = previous local proc. data ptr
+	// S + 2 = previous PC
+	(*mem_stack)[i + 1] = gs_L;
+    (*mem_stack)[i + 2] = gs_PC;
 
-	// S + 2 = previous local proc. data ptr
-	// S + 3 = previous PC
-	(*mem_stack)[i + 2] = gs_L;
-    (*mem_stack)[i + 3] = gs_PC;
-
-    gs_S += 4;
+    gs_S += 3;
     gs_L = i;
 }

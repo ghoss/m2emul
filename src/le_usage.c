@@ -48,7 +48,7 @@ void le_prog_usage()
 void le_monitor_usage()
 {
     fprintf(stderr,
-        "x\tExecute one instruction\n"
+        "t\tExecute one instruction\n"
 		"r\tShow registers\n"
 		"q\tExit interpreter\n"
         "h, ?\tShow this help summary\n\n"

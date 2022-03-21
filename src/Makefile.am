@@ -6,7 +6,7 @@
 # Published by Guido Hoss under GNU Public License V3.
 #=====================================================
 
-AM_CFLAGS += -Wall -DVERSION_BUILD_DATE=\""$(shell date +'%F')"\"
+AM_CFLAGS = -Wall -DVERSION_BUILD_DATE=\""$(shell date +'%F')"\"
 
 bin_PROGRAMS = mule
 
@@ -17,5 +17,6 @@ mule_SOURCES = \
 	le_io.c le_io.h \
 	le_usage.c le_usage.h \
 	le_loader.c le_loader.h \
+	le_syscall.c le_syscall.h \
 	le_trace.c le_trace.h \
 	le_mach.c le_mach.h

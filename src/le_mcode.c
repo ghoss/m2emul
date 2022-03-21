@@ -13,6 +13,7 @@
 #include "le_stack.h"
 #include "le_io.h"
 #include "le_trace.h"
+#include "le_syscall.h"
 #include "le_mcode.h"
 
 #define MCI_TLCADR	016		// Trap location addr
@@ -148,7 +149,6 @@ void le_execute(uint16_t modn, uint16_t procn)
 
 		case 026 :
 			// LSA  load stack address
-			_HALT
 			es_push(es_pop() + le_next());
 			break;
 
@@ -752,12 +752,12 @@ void le_execute(uint16_t modn, uint16_t procn)
 
 		case 0246 :
 			// SVC  system hook (emulator only)
-			error(0, 0, "HOOK call");
+			le_supervisor_call();
 			break;
 
 		case 0247 :
 			// SYS  rarely used system functions
-			error (1, 0, "SYS not implemented");
+			le_system_call();
 			break;
 
 		case 0250 :
@@ -886,10 +886,8 @@ void le_execute(uint16_t modn, uint16_t procn)
 
 		case 0267 : {
 			// PCOP  allocation and copy of value parameter
-			_HALT
 			(*mem_stack)[gs_L + le_next()] = gs_S;
 			uint16_t sz = es_pop();
-			uint16_t k = gs_S + sz;
 			uint16_t adr = es_pop();
 			while (sz-- > 0)
 				(*mem_stack)[gs_S++] = (*mem_stack)[adr++];
@@ -953,7 +951,6 @@ void le_execute(uint16_t modn, uint16_t procn)
 
 		case 0276 : {
 			// SHL
-			_HALT
 			uint16_t j = es_pop();
 			uint16_t i = es_pop() & 0xf;
 			es_push(j << i);
@@ -962,7 +959,6 @@ void le_execute(uint16_t modn, uint16_t procn)
 
 		case 0277 : {
 			// SHR
-			_HALT
 			uint16_t j = es_pop();
 			uint16_t i = es_pop() & 0xf;
 			es_push(j >> i);
@@ -1021,7 +1017,7 @@ void le_execute(uint16_t modn, uint16_t procn)
 			uint16_t k = es_pop();
 			uint16_t low = le_next2();
 			uint16_t hi = le_next2();
-			(*mem_stack)[gs_S++] = gs_PC + (hi - low) << 1 + 4;
+			(*mem_stack)[gs_S++] = gs_PC + ((hi - low) << 1) + 4;
 			if ((k >= low) && (k <= hi))
 				gs_PC += (k - low + 1) << 1;
 			i = le_next2();
@@ -1313,11 +1309,10 @@ void le_execute(uint16_t modn, uint16_t procn)
 //          (* display point at <j,k> in mode i inside
 //             bitmap dbmd *) |
 			_HALT
-			uint16_t k = es_pop();
-			uint16_t j = es_pop();
-			uint16_t dbmd = es_pop();
-			uint16_t i = es_pop();
-			error(1, 0, "DDT not implemented");
+			// uint16_t k = es_pop();
+			// uint16_t j = es_pop();
+			// uint16_t dbmd = es_pop();
+			// uint16_t i = es_pop();
 			break;
 		}
 
@@ -1326,11 +1321,10 @@ void le_execute(uint16_t modn, uint16_t procn)
 //          (* replicate pattern sb over block db inside
 //             bitmap dbmd in mode i *) |
 			_HALT
-			uint16_t db = es_pop();
-			uint16_t sb = es_pop();
-			uint16_t dbmd = es_pop();
-			uint16_t i = es_pop();
-			error(1, 0, "REPL not implemented");
+			// uint16_t db = es_pop();
+			// uint16_t sb = es_pop();
+			// uint16_t dbmd = es_pop();
+			// uint16_t i = es_pop();
 			break;
 		}
 
@@ -1339,12 +1333,11 @@ void le_execute(uint16_t modn, uint16_t procn)
 //          (* transfer block sb in bitmap sbmd to block db
 //             inside bitmap dbmd in mode i *) |
 			_HALT
-			uint16_t sbmd = es_pop();
-			uint16_t db = es_pop();
-			uint16_t sb = es_pop();
-			uint16_t dbmd = es_pop();
-			uint16_t i = es_pop();
-			error(1, 0, "BBLT not implemented");
+			// uint16_t sbmd = es_pop();
+			// uint16_t db = es_pop();
+			// uint16_t sb = es_pop();
+			// uint16_t dbmd = es_pop();
+			// uint16_t i = es_pop();
 			break;
 		}
 
@@ -1353,11 +1346,10 @@ void le_execute(uint16_t modn, uint16_t procn)
 //          (* copy bit pattern for character j from font fo
 //             to block db inside bitmap dbmd *) |
 			_HALT
-			uint16_t j = es_pop();
-			uint16_t db = es_pop();
-			uint16_t fo = es_pop();
-			uint16_t dbmd = es_pop();
-			error(1, 0, "DCH not implemented");
+			// uint16_t j = es_pop();
+			// uint16_t db = es_pop();
+			// uint16_t fo = es_pop();
+			// uint16_t dbmd = es_pop();
 			break;
 		}
 
@@ -1365,11 +1357,10 @@ void le_execute(uint16_t modn, uint16_t procn)
 			// UNPK  unpack
 //          (*extract bits i..j from k, then right adjust*)
 			_HALT
-			uint16_t k = es_pop();
-			uint16_t j = es_pop();
-			uint16_t i = es_pop();
-			es_push(k);
-			error(1, 0, "UNPK not implemented");
+			// uint16_t k = es_pop();
+			// uint16_t j = es_pop();
+			// uint16_t i = es_pop();
+			// es_push(k);
 			break;
 		}
 
@@ -1378,12 +1369,11 @@ void le_execute(uint16_t modn, uint16_t procn)
 //          (*pack the rightmost j-i+1 bits of k into positions
 //            i..j of word stk[adr] *) |
 			_HALT
-			uint16_t k = es_pop();
-			uint16_t j = es_pop();
-			uint16_t i = es_pop();
-			uint16_t adr = es_pop();
-			es_push(k);
-			error(1, 0, "PACK not implemented");
+			// uint16_t k = es_pop();
+			// uint16_t j = es_pop();
+			// uint16_t i = es_pop();
+			// uint16_t adr = es_pop();
+			// es_push(k);
 			break;
 		}
 
@@ -1430,16 +1420,17 @@ void le_execute(uint16_t modn, uint16_t procn)
 		}
 
 		case 0354 : {
+			// RTN  return from procedure
 			// Reset stack pointer to previous state
 			gs_S = gs_L;
 
 			// Restore caller status from stack
-			gs_L = (*mem_stack)[gs_S + 2];
-			gs_PC = (*mem_stack)[gs_S + 3];
+			gs_L = (*mem_stack)[gs_S + 1];
+			gs_PC = (*mem_stack)[gs_S + 2];
 
-			if ((*mem_stack)[gs_S] == 1)
+			if ((*mem_stack)[gs_S] & 0xff00)
 				// External call
-				set_module_ptr((*mem_stack)[gs_S + 1]);
+				set_module_ptr((*mem_stack)[gs_S & 0xff]);
 			break;
 		}
 
@@ -1482,20 +1473,16 @@ void le_execute(uint16_t modn, uint16_t procn)
 
 		case 0360 : {
 			// CLL  call local procedure
-			_HALT
 			uint16_t i = le_next();
-			stk_mark(gs_L, false);
-			gs_PC = i << 1;
-			gs_PC = le_next2();
+			stk_mark(0, false);
+			gs_PC = modp->proc[i];
 			break;
 		}
 
 		case 0361 ... 0377 :
 			// CLL1 - CLL15  call local procedure
-			_HALT
-			stk_mark(gs_L, false);
-			gs_PC = (gs_IR & 0xf) << 1;
-			gs_PC = le_next2();
+			stk_mark(0, false);
+			gs_PC = modp->proc[gs_IR & 0xf];
 			break;
 
 		default :
