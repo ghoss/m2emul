@@ -6,9 +6,12 @@ Work in progress. Not in a usable state yet!
 
 ## Current Development Status
 * M-Code Loader fully functional (can load and stage main module and its dependencies).
-* Single-step tracing with limited register display is functional.
+* Runtime debugging is functional:
+  * Single-step execution
+  * Register and stack display
+  * Inspection of data words (variables)
 * Interpreter can already execute simple Modula-2 programs.
-* Most M-Codes are still disabled for debugging however.
+* Most M-Codes are still disabled for debugging however (due to ongoing tests).
 
 ## Key Features Compared To The Lilith Machine
 ### Functionality in General
@@ -18,7 +21,7 @@ Work in progress. Not in a usable state yet!
 ### Specific Changes And Improvements
 * Loads object files from underlying host filesystem (e.g. UNIX) and therefore does not rely on Medos-2 filesystem and disk structure.
 * Provides its own dynamic loader for staging of object files and does not rely on the Medos-2 operating system loader.
-* On the Lilith, all modules share the same 65K (16-bit) address space. ```m2emul``` provides much more memory to programs while still maintaining the original 16-bit instruction set by assigning each module its own code space (max. 65K per module) and its own data space (an additional max. 65K words). Of course, only as much memory as actually needed is allocated for loaded modules.
+* On the Lilith, all modules share the same 65K (16-bit) address space. **m2emul** provides much more memory to programs while still maintaining the original 16-bit instruction set by assigning each module its own code space (max. 65K per module) and its own data space (an additional max. 65K words). Of course, only as much memory as actually needed is allocated for loaded modules.
 * The stack and the heap also are assigned their own memory spaces, again max. 65K words for each. These sizes are configurable at launch time.
 ### Planned Features
 * Framebuffer compatible with original code for graphical output (currently, the emulator only runs in terminal-based text mode).
