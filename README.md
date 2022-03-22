@@ -2,7 +2,7 @@
 ## Overview
 This will become an interpreter and virtual machine for Lilith Modula-2 M-Code object files.
 
-Work in progress. Not in a usable state yet!
+Work in progress. Not quite usable yet!
 
 ## Current Development Status
 * M-Code Loader fully functional (can load and stage main module and its dependencies).
@@ -21,8 +21,8 @@ Work in progress. Not in a usable state yet!
 ### Specific Changes And Improvements
 * Loads object files from underlying host filesystem (e.g. UNIX) and therefore does not rely on Medos-2 filesystem and disk structure.
 * Provides its own dynamic loader for staging of object files and does not rely on the Medos-2 operating system loader.
-* On the Lilith, all modules share the same 65K (16-bit) address space. **m2emul** provides much more memory to programs while still maintaining the original 16-bit instruction set by assigning each module its own code space (max. 65K per module) and its own data space (an additional max. 65K words). Of course, only as much memory as actually needed is allocated for loaded modules.
-* The stack and the heap also are assigned their own memory spaces, again max. 65K words for each. These sizes are configurable at launch time.
+* On the Lilith, all modules share the same 65K (16-bit) address space. **m2emul** provides much more memory to programs while still maintaining the original 16-bit instruction set by assigning each module its own code space (max. 65KB per module) and its own data space (max. 65K words = 128KB). Of course, only as much memory as actually needed is allocated for loaded modules.
+* The stack and the heap also are assigned their own memory spaces, again max. 65K words (128KB) for each. These sizes will be configurable at launch time.
 ### Planned Features
 * Framebuffer compatible with original code for graphical output (currently, the emulator only runs in terminal-based text mode).
 * Optional support for disk image files in Medos-2 format (such as those provided for Jos Dreesen's *Emulith* emulator).
