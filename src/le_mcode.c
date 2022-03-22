@@ -194,7 +194,6 @@ void le_execute(uint16_t modn, uint16_t procn)
 
 		case 034 :
 			// JPBC  jump backward conditional
-			_HALT
 			if (es_pop() == 0)
 			{
 				uint16_t i = le_next();
@@ -208,7 +207,6 @@ void le_execute(uint16_t modn, uint16_t procn)
 
 		case 035 : {
 			// JPB  jump backward
-			_HALT
 			uint16_t i = le_next();
 			gs_PC -= i + 1;
 			break;
@@ -762,7 +760,6 @@ void le_execute(uint16_t modn, uint16_t procn)
 
 		case 0252 : {
 			// ULSS
-			_HALT
 			uint16_t j = es_pop();
 			uint16_t i = es_pop();
 			es_push((i < j) ? 1 : 0);
@@ -771,7 +768,6 @@ void le_execute(uint16_t modn, uint16_t procn)
 
 		case 0253 : {
 			// ULEQ
-			_HALT
 			uint16_t j = es_pop();
 			uint16_t i = es_pop();
 			es_push((i <= j) ? 1 : 0);
@@ -780,7 +776,6 @@ void le_execute(uint16_t modn, uint16_t procn)
 
 		case 0254 : {
 			// UGTR
-			_HALT
 			uint16_t j = es_pop();
 			uint16_t i = es_pop();
 			es_push((i > j) ? 1 : 0);
@@ -789,7 +784,6 @@ void le_execute(uint16_t modn, uint16_t procn)
 
 		case 0255 : {
 			// UGEQ
-			_HALT
 			uint16_t j = es_pop();
 			uint16_t i = es_pop();
 			es_push((i >= j) ? 1 : 0);
@@ -883,7 +877,7 @@ void le_execute(uint16_t modn, uint16_t procn)
 			// high bit set previously by stk_mark
 			uint16_t base_L = stack[gs_L];
 			uint16_t *p = (base_L & 0xff00) ?
-				&(module_tab[base_L & 0xff].data[adr]) : &(data_p[adr]);
+				&(stack[adr]) : &(data_p[adr]);
 
 			// Copy words from memory into stack
 			while (sz-- > 0)
@@ -1056,7 +1050,6 @@ void le_execute(uint16_t modn, uint16_t procn)
 			// CHKZ
 			int16_t hi = es_pop();
 			int16_t i = es_pop();
-VERBOSE("i=%d, hi=%d\n", i, hi)
 			es_push(i);
 			if ((i < 0) || (i > hi))
 				le_trap(modp, TRAP_INDEX);

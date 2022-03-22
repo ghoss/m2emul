@@ -160,7 +160,7 @@ void le_decode(mod_entry_t *mod, uint16_t pc)
 
         case 034 ... 035 :
             // JPB, JPBC
-            OUT("\t; <-[%o]", pc - (int16_t) (a1 - 1))
+            OUT("\t; <-[%o]", pc - (int16_t) (a1 + 1))
             break;
             
         case 030 ... 033 :

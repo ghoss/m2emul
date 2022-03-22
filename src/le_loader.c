@@ -197,10 +197,9 @@ void le_parse_objfile(FILE *f)
                         "Module %s: Data frame overrun", mod->id.name
                     );
 
-                // Read data block into memory at offset a
-                if (fread(mod->data + a, MACH_WORD_SZ, n, f) != n)
-                    le_rderr("data");
-
+                // Read byte-swapped data block into memory at offset a
+				while (n-- > 0)
+					mod->data[a ++] = le_rword(f);
                 break;
             }
 
