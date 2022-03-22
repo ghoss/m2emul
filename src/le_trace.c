@@ -173,7 +173,7 @@ void le_decode(mod_entry_t *mod, uint16_t pc)
             // FOR1
             OUT( 
                 "\t; ->[%o] %s",
-                pc + (int8_t) (a1 & 0xff) - 3,
+                pc + (int8_t) (a1 & 0xff) - 2,
                 (b1 == 0) ? "UP" : "DN"
             )
             break;
@@ -182,7 +182,7 @@ void le_decode(mod_entry_t *mod, uint16_t pc)
             // FOR2
             OUT( 
                 "\t; ->[%o]",
-                pc + (int8_t) (a1 & 0xff) - 3
+                pc + (int8_t) (a1 & 0xff) - 2
             )
             break;
 

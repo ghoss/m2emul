@@ -175,7 +175,7 @@ void le_execute(uint16_t modn, uint16_t procn)
 			// JPFC  jump forward conditional
 			if (es_pop() == 0)
 			{
-				uint16_t i = le_next();
+				uint8_t i = le_next();
 				gs_PC += i - 1;
 			}
 			else
@@ -196,7 +196,7 @@ void le_execute(uint16_t modn, uint16_t procn)
 			// JPBC  jump backward conditional
 			if (es_pop() == 0)
 			{
-				uint16_t i = le_next();
+				uint8_t i = le_next();
 				gs_PC -= i + 1;
 			}
 			else
@@ -207,7 +207,7 @@ void le_execute(uint16_t modn, uint16_t procn)
 
 		case 035 : {
 			// JPB  jump backward
-			uint16_t i = le_next();
+			uint8_t i = le_next();
 			gs_PC -= i + 1;
 			break;
 		}
@@ -222,7 +222,7 @@ void le_execute(uint16_t modn, uint16_t procn)
 			else
 			{
 				es_push(1);
-				uint16_t i = le_next();
+				uint8_t i = le_next();
 				gs_PC += i - 1;
 			}
 			break;
@@ -233,7 +233,7 @@ void le_execute(uint16_t modn, uint16_t procn)
 			if (es_pop() == 0)
 			{
 				es_push(0);
-				uint16_t i = le_next();
+				uint8_t i = le_next();
 				gs_PC += i - 1;
 			}
 			else
@@ -259,16 +259,16 @@ void le_execute(uint16_t modn, uint16_t procn)
 
 		case 042 : {
 			// LEW  load external word
-			uint16_t ext_mod = le_next();		// Module number
-			uint16_t ext_adr = le_next();		// Data word offset
+			uint8_t ext_mod = le_next();		// Module number
+			uint8_t ext_adr = le_next();		// Data word offset
 			es_push(module_tab[ext_mod].data[ext_adr]);
 			break;
 		}
 
 		case 043 : {
 			// LED
-			uint16_t ext_mod = le_next();		// Module number
-			uint16_t ext_adr = le_next();		// Data word offset
+			uint8_t ext_mod = le_next();		// Module number
+			uint8_t ext_adr = le_next();		// Data word offset
 			es_push(module_tab[ext_mod].data[ext_adr]);
 			es_push(module_tab[ext_mod].data[ext_adr + 1]);
 			break;
@@ -297,16 +297,16 @@ void le_execute(uint16_t modn, uint16_t procn)
 
 		case 062 : {
 			// SEW  store external word
-			uint16_t ext_mod = le_next();		// Module number
-			uint16_t ext_adr = le_next();		// Data word offset
+			uint8_t ext_mod = le_next();		// Module number
+			uint8_t ext_adr = le_next();		// Data word offset
 			module_tab[ext_mod].data[ext_adr] = es_pop();
 			break;
 		}
 
 		case 063 : {
 			// SED  store external double word
-			uint16_t ext_mod = le_next();		// Module number
-			uint16_t ext_adr = le_next();		// Data word offset
+			uint8_t ext_mod = le_next();		// Module number
+			uint8_t ext_adr = le_next();		// Data word offset
 			module_tab[ext_mod].data[ext_adr + 1] = es_pop();
 			module_tab[ext_mod].data[ext_adr] = es_pop();
 			break;
@@ -325,7 +325,7 @@ void le_execute(uint16_t modn, uint16_t procn)
 
 		case 0101 : {
 			// LGD  load global double word
-			uint16_t i = le_next();
+			uint8_t i = le_next();
 			es_push(data_p[i]);
 			es_push(data_p[i + 1]);
 			break;
@@ -407,8 +407,7 @@ void le_execute(uint16_t modn, uint16_t procn)
 
 		case 0204 :
 			// LSTA  load string address
-			_HALT
-			es_push(stack[gs_G + 2] + le_next());
+			es_push(data_p[2] + le_next());
 			break;
 
 		case 0205 : {
@@ -666,7 +665,7 @@ void le_execute(uint16_t modn, uint16_t procn)
 		case 0237 : {
 			// FFCT  floating functions
 			_HALT
-			uint16_t i = le_next();
+			uint8_t i = le_next();
 			floatword_t z;
 
 			switch (i)
@@ -803,7 +802,7 @@ void le_execute(uint16_t modn, uint16_t procn)
 			// RDS  read string
 			_HALT
 			uint16_t k = es_pop();
-			int i = le_next();
+			int8_t i = le_next();
 			do {
 				stack[k++] = le_next2();
 			} while (i-- >= 0);
@@ -964,44 +963,43 @@ void le_execute(uint16_t modn, uint16_t procn)
 
 		case 0300 : {
 			// FOR1  enter FOR statement
-			_HALT
-			uint16_t i = le_next();
-			uint16_t hi = es_pop();
-			uint16_t low = es_pop();
+			uint8_t sign = le_next();
+			int16_t hi = es_pop();
+			int16_t low = es_pop();
 			uint16_t adr = es_pop();
-			uint16_t k = gs_PC;
-			k += le_next2() - 2;
-			if (((i == 0) && (low <= hi))
-				|| ((i != 0) && (low >= hi)))
+			uint16_t jmp = gs_PC + 2;
+			jmp += (int16_t) le_next2() - 2;
+			if (((sign == 0) && (low <= hi))
+				|| ((sign != 0) && (low >= hi)))
 			{
-				stack[adr] = low;
-				stack[gs_S++] = adr;
-				stack[gs_S++] = hi;
+				data_p[adr] = low;
+				stack[gs_S] = adr;
+				stack[gs_S + 1] = hi;
+				gs_S += 2;
 			}
 			else
 			{
-				gs_PC = k;
+				gs_PC = jmp;
 			}
 			break;
 		}
 
 		case 0301 : {
 			// FOR2  exit FOR statement
-			_HALT
-			uint16_t hi = stack[gs_S - 1];
+			int16_t hi = stack[gs_S - 1];
 			uint16_t adr = stack[gs_S - 2];
-			int16_t sz = le_next();
-			uint16_t k = gs_PC;
-			k += le_next2() - 2;
-			uint16_t i = stack[adr] + sz;
-			if (((sz >= 0) && (i > hi)) || ((sz <= 0) && (i < hi)))
+			int8_t step = le_next();
+			uint16_t jmp = gs_PC;
+			jmp += (int16_t) le_next2();
+			int16_t i = data_p[adr] + step;
+			if (((step >= 0) && (i > hi)) || ((step <= 0) && (i < hi)))
 			{
 				gs_S -= 2;
 			}
 			else
 			{
-				stack[adr] = i;
-				gs_PC = k;
+				data_p[adr] = i;
+				gs_PC = jmp;
 			}
 			break;
 		}
@@ -1187,7 +1185,6 @@ void le_execute(uint16_t modn, uint16_t procn)
 
 		case 0330 : {
 			// IADD
-			_HALT
 			int16_t j = es_pop();
 			int16_t i = es_pop();
 			int32_t z = i + j;
@@ -1199,7 +1196,6 @@ void le_execute(uint16_t modn, uint16_t procn)
 
 		case 0331 : {
 			// ISUB
-			_HALT
 			int16_t j = es_pop();
 			int16_t i = es_pop();
 			int32_t z = i - j;
@@ -1211,7 +1207,6 @@ void le_execute(uint16_t modn, uint16_t procn)
 
 		case 0332 : {
 			// IMUL
-			_HALT
 			int16_t j = es_pop();
 			int16_t i = es_pop();
 			int32_t z = i * j;
@@ -1223,7 +1218,6 @@ void le_execute(uint16_t modn, uint16_t procn)
 
 		case 0333 : {
 			// IDIV
-			_HALT
 			int16_t j = es_pop();
 			int16_t i = es_pop();
 			es_push(i / j);
@@ -1375,7 +1369,7 @@ void le_execute(uint16_t modn, uint16_t procn)
 			// GB  get base adr n levels down
 			_HALT
 			uint16_t i = gs_L;
-			uint16_t j = le_next();
+			uint8_t j = le_next();
 			do {
 				i = stack[i];
 			} while (--j != 0);
@@ -1405,7 +1399,7 @@ void le_execute(uint16_t modn, uint16_t procn)
 
 		case 0353 : {
 			// ENTR  enter procedure
-			uint16_t i = le_next();
+			uint8_t i = le_next();
 			if (gs_S < MACH_STK_SZ - i)
 				gs_S += i;
 			else
@@ -1430,8 +1424,8 @@ void le_execute(uint16_t modn, uint16_t procn)
 
 		case 0355 : {
 			// CLX  call external procedure
-			uint16_t call_mod = le_next();		// Module number
-			uint16_t call_proc = le_next();		// Procedure number
+			uint8_t call_mod = le_next();		// Module number
+			uint8_t call_proc = le_next();		// Procedure number
 			if ((call_mod != 0) || (call_proc != 0))
 			{
 				// Ignore calls to System.0
@@ -1445,7 +1439,7 @@ void le_execute(uint16_t modn, uint16_t procn)
 		case 0356 : {
 			// CLI  call procedure at intermediate level
 			_HALT
-			uint16_t i = le_next();
+			uint8_t i = le_next();
 			stk_mark(es_pop(), false);
 			gs_PC = i << 1;
 			gs_PC = le_next2();
@@ -1467,7 +1461,7 @@ void le_execute(uint16_t modn, uint16_t procn)
 
 		case 0360 : {
 			// CLL  call local procedure
-			uint16_t i = le_next();
+			uint8_t i = le_next();
 			stk_mark(0, false);
 			gs_PC = modp->proc[i];
 			break;
