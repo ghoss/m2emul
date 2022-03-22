@@ -297,7 +297,7 @@ void le_monitor(mod_entry_t *mod)
 
 			case 'g' :
 				// Execute until next breakpoint or end of program
-				trace = false;
+				breakpoint = true;
 				quit = true;
 				continue;
 
@@ -309,6 +309,7 @@ void le_monitor(mod_entry_t *mod)
 
 			case 't' :
 				// Do nothing (step one instruction)
+				breakpoint = false;
 				quit = true;
 				break;
 

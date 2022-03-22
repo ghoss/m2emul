@@ -125,7 +125,8 @@ void le_execute(uint16_t modn, uint16_t procn)
 
 		case 024 :
 			// LLA  load local address
-			es_push(gs_L + le_next());
+			// Change: index - 1
+			es_push(gs_L + le_next() - 1);
 			break;
 
 		case 025 :
@@ -872,8 +873,17 @@ void le_execute(uint16_t modn, uint16_t procn)
 			// or to an external data area if activation record
 			// high bit set previously by stk_mark
 			uint16_t base_L = stack[gs_L];
-			uint16_t *p = (base_L & 0xff00) ?
-				&(stack[adr]) : &(module_tab[base_L & 0xff].data[adr]);
+			uint16_t *p;
+			if (base_L & 0xff00)
+			{
+				// Call from external module
+				p = &(module_tab[base_L & 0xff].data[adr]);
+			}
+			else
+			{
+				// Call from local (current) module
+				p = &(data_p[adr]);
+			}
 
 			// Copy words from memory into stack
 			while (sz-- > 0)
@@ -967,7 +977,8 @@ void le_execute(uint16_t modn, uint16_t procn)
 			if (((sign == 0) && (low <= hi))
 				|| ((sign != 0) && (low >= hi)))
 			{
-				data_p[adr] = low;
+				// data_p[adr] = low;
+				stack[adr] = low;
 				stack[gs_S] = adr;
 				stack[gs_S + 1] = hi;
 				gs_S += 2;
@@ -986,14 +997,16 @@ void le_execute(uint16_t modn, uint16_t procn)
 			int8_t step = le_next();
 			uint16_t jmp = gs_PC;
 			jmp += (int16_t) le_next2();
-			int16_t i = data_p[adr] + step;
+			// int16_t i = data_p[adr] + step;
+			int16_t i = stack[adr] + step;
 			if (((step >= 0) && (i > hi)) || ((step <= 0) && (i < hi)))
 			{
 				gs_S -= 2;
 			}
 			else
 			{
-				data_p[adr] = i;
+				// data_p[adr] = i;
+				stack[adr] = i;
 				gs_PC = jmp;
 			}
 			break;
