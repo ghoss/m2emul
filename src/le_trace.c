@@ -21,6 +21,11 @@
 bool trace = false;			// Enables trace mode
 bool show_regs = true;		// Enables register/stack display
 
+// Breakpoint variables
+bool breakpoint = false;	// Enables breakpoint
+uint8_t bp_module;			// Number of module to break in
+uint16_t bp_PC;				// Breakpoint PC
+
 
 // M-Code mnemonics table
 //
@@ -232,6 +237,21 @@ void le_show_registers(mod_entry_t *mod)
 void le_monitor(mod_entry_t *mod)
 {
 	bool quit = false;
+
+	// Check if breakpoint enabled
+	if (breakpoint)
+	{
+		if ((bp_module == mod->id.idx) && (gs_PC == bp_PC))
+		{
+			// Re-enable monitor and disable breakpoint
+			trace = true;
+		}
+		else
+		{
+			// Not at breakpoint; continue execution
+			return;
+		}
+	}
 	
 	// Return if trace mode disabled
 	if (! trace) return;
@@ -258,12 +278,28 @@ void le_monitor(mod_entry_t *mod)
 
 			case 'd' : {
 				// Show contents of data word
-				char s[64];
-				scanf("%63s", &(s[0]));
-				uint16_t w = atoi(&(s[0]));
+				uint16_t w;
+				scanf("%hd", &w);
 				VERBOSE("data[%d]=x%04x\n", w, mod->data[w]);
 				break;
 			}
+
+			case 'b' : {
+				// Set breakpoint
+				scanf("%hhd:%ho", &bp_module, &bp_PC);
+				VERBOSE(
+					"Breakpoint set to %s:%07o\n", 
+					module_tab[bp_module].id.name, bp_PC
+				);
+				breakpoint = true;
+				break;
+			}
+
+			case 'g' :
+				// Execute until next breakpoint or end of program
+				trace = false;
+				quit = true;
+				continue;
 
 			case 'h' :
 			case '?' :
@@ -281,8 +317,7 @@ void le_monitor(mod_entry_t *mod)
 				exit(0);
 
 			default :
-				error(0, 0, "Invalid monitor command, press 'h' for help");
-				break;
+				continue;
 		}
 		printf("cmd> ");
 	}

@@ -125,7 +125,6 @@ void le_execute(uint16_t modn, uint16_t procn)
 
 		case 024 :
 			// LLA  load local address
-			_HALT
 			es_push(gs_L + le_next());
 			break;
 
@@ -845,7 +844,6 @@ void le_execute(uint16_t modn, uint16_t procn)
 
 		case 0264 :
 			// STOT  copy from stack to procedure stack
-			_HALT
 			stack[gs_S ++] = es_pop();
 			break;
 
@@ -860,7 +858,6 @@ void le_execute(uint16_t modn, uint16_t procn)
 
 		case 0266 :
 			// DECS  decrement stackpointer
-			_HALT
 			gs_S --;
 			break;
 
@@ -876,7 +873,7 @@ void le_execute(uint16_t modn, uint16_t procn)
 			// high bit set previously by stk_mark
 			uint16_t base_L = stack[gs_L];
 			uint16_t *p = (base_L & 0xff00) ?
-				&(stack[adr]) : &(data_p[adr]);
+				&(stack[adr]) : &(module_tab[base_L & 0xff].data[adr]);
 
 			// Copy words from memory into stack
 			while (sz-- > 0)
@@ -897,7 +894,6 @@ void le_execute(uint16_t modn, uint16_t procn)
 
 		case 0271 : {
 			// USUB
-			_HALT
 			uint16_t j = es_pop();
 			uint16_t i = es_pop();
 			if (i < j)
@@ -919,7 +915,6 @@ void le_execute(uint16_t modn, uint16_t procn)
 
 		case 0273 : {
 			// UDIV
-			_HALT
 			uint16_t j = es_pop();
 			uint16_t i = es_pop();
 			es_push(i / j);
