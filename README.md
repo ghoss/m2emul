@@ -8,6 +8,7 @@ Work in progress. Not quite usable yet!
 * M-Code Loader fully functional (can load and stage main module and its dependencies).
 * Runtime debugging is functional:
   * Single-step execution
+  * Set breakpoint / execute to breakpoint
   * Register and stack display
   * Inspection of data words (variables)
 * Interpreter can already execute simple Modula-2 programs.
