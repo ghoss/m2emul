@@ -18,14 +18,15 @@
 #define OUT(...)		fprintf(ofd, __VA_ARGS__);
 
 // Global variables
-bool trace = false;		// Enables trace mode
+bool trace = false;			// Enables trace mode
+bool show_regs = true;		// Enables register/stack display
 
 
 // M-Code mnemonics table
 //
 #define LE_MNEM_LEN  5
 
-char *mnem_tab = 
+const char *mnem_tab = 
 	"LI0  LI1  LI2  LI3  LI4  LI5  LI6  LI7  LI8  LI9  LI10 LI11 LI12 LI13 LI14 LI15 "
 	"LIB +---- LIW *LID /LLA +LGA +LSA +LEA *JPC *JP  *JPFC+JPF +JPBC+JPB +ORJP+AJP +"
 	"LLW +LLD +LEW -LED -LLW4 LLW5 LLW6 LLW7 LLW8 LLW9 LLW10LLW11LLW12LLW13LLW14LLW15"
@@ -42,6 +43,40 @@ char *mnem_tab =
 	"OR   XOR  AND  COM  IN   LIN  MSK  NOT  IADD ISUB IMUL IDIV IMOD BIT  NOP  MOVF "
 	"MOV  CMP  DDT  REPL BBLT DCH  UNPK PACK GB  +GB1  ALLOCENTR+RTN  CLX -CLI +CLF  "
 	"CLL +CLL1 CLL2 CLL3 CLL4 CLL5 CLL6 CLL7 CLL8 CLL9 CLL10CLL11CLL12CLL13CLL14CLL15";
+
+
+// Trap definitions
+//
+const char *trap_descr[] = {
+	[TRAP_STACK_OVF] = "Stack overflow",
+	[TRAP_INDEX] = "Array index out of bounds",
+	[TRAP_INT_ARITH] = "Integer arithmetic under/overflow",
+	[TRAP_CODE_OVF] = "Code frame overrun",
+	[TRAP_INV_FFCT] = "Invalid FFCT function",
+	[TRAP_INV_OPC] = "Invalid opcode",
+	[TRAP_SYSTEM] = "Compiler-triggered trap"
+};
+
+
+// le_trap()
+// Trap handler
+//
+void le_trap(mod_entry_t *modp, uint16_t n)
+{
+	switch (n)
+	{
+		case TRAP_STACK_OVF :
+		case TRAP_INDEX :
+		case TRAP_INT_ARITH :
+		case TRAP_CODE_OVF :
+		case TRAP_INV_FFCT :
+		case TRAP_INV_OPC :
+		case TRAP_SYSTEM :
+			VERBOSE("%s\n", trap_descr[n])
+			break;
+	}
+	error(1, 0, "%s: It's a TRAP (%d)!  PC=%07o", modp->id.name, n, gs_PC);
+}
 
 
 // le_decode()
@@ -160,39 +195,75 @@ void le_decode(mod_entry_t *mod, uint16_t pc)
 }
 
 
+// le_show_registers()
+// Show registers and stacks
+//
+void le_show_registers(mod_entry_t *mod)
+{
+	FILE *ofd = stdout;
+
+	OUT("%s: S=x%04x, L=x%04x, ES=x%04x", 
+		mod->id.name, 
+		gs_S, gs_L, gs_SP
+	)
+
+	// Display stack
+	for (uint8_t i = 0; i < gs_S; i ++)
+	{
+		if (i % 8 == 0)
+			OUT("\nSTK:")
+		OUT("  %02d: %04X", i, stack[i])
+	}
+
+	// Display expression stack
+	for (uint8_t i = 0; i < gs_SP; i ++)
+	{
+		if (i % 8 == 0)
+			OUT("\nES: ")
+		OUT("  %02d: %04X", i, (*mem_exstack)[i])
+	}
+	OUT("\n")
+}
+
+
 // le_monitor()
 // Waits for a monitor command from keyboard and executes it
 //
-void le_monitor(mod_entry_t *mod, uint16_t pc)
+void le_monitor(mod_entry_t *mod)
 {
-	char c[64];
-	FILE *ofd = stdout;
+	bool quit = false;
 	
 	// Return if trace mode disabled
 	if (! trace) return;
 
 	// Decode current instruction
-	le_decode(mod, pc);
+	le_decode(mod, gs_PC);
+	if (show_regs)
+		le_show_registers(mod);
 
 	// Enter command loop
-	do {
-		printf("cmd> ");
-		scanf("%63s", &(c[0]));
-
-		switch (c[0])
+	printf("cmd> ");
+	while (! quit) {
+		switch (getchar())
 		{
 			case '\n' :
 				// Ignore EOL
-				break;
+				continue;
 
 			case 'r' :
-				// Show registers
-				OUT("%s: S=%04xh, *S=%04xh, ES=%02xh, *ES=%04xh\n", 
-					mod->id.name, 
-					gs_S, stack[gs_S - 1], 
-					gs_SP, (*mem_exstack)[gs_SP]
-				)
+				// Switch register display on/off
+				show_regs = ! show_regs;
+				VERBOSE("Register display now %s\n", show_regs ? "ON" : "OFF")
 				break;
+
+			case 'd' : {
+				// Show contents of data word
+				char s[64];
+				scanf("%63s", &(s[0]));
+				uint16_t w = atoi(&(s[0]));
+				VERBOSE("data[%d]=x%04x\n", w, mod->data[w]);
+				break;
+			}
 
 			case 'h' :
 			case '?' :
@@ -201,7 +272,8 @@ void le_monitor(mod_entry_t *mod, uint16_t pc)
 				break;
 
 			case 't' :
-				// Do nothing (will exit)
+				// Do nothing (step one instruction)
+				quit = true;
 				break;
 
 			case 'q' :
@@ -212,5 +284,6 @@ void le_monitor(mod_entry_t *mod, uint16_t pc)
 				error(0, 0, "Invalid monitor command, press 'h' for help");
 				break;
 		}
-	} while (c[0] != 't');
+		printf("cmd> ");
+	}
 }

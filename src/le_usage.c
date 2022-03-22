@@ -49,7 +49,8 @@ void le_monitor_usage()
 {
     fprintf(stderr,
         "t\tExecute one instruction\n"
-		"r\tShow registers\n"
+		"r\tSwitch register/stack display on/off\n"
+		"d num\tShow contents of data word 'num'\n"
 		"q\tExit interpreter\n"
         "h, ?\tShow this help summary\n\n"
     );

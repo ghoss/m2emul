@@ -30,3 +30,12 @@ void le_iowrite(uint16_t chan, uint16_t w)
 {
     error(1, 0, "WRITE not implemented (%d,%d)", chan, w);
 }
+
+
+// le_putchar()
+// Prints one character to the terminal (implementation of DCH opcode)
+//
+void le_putchar(char c)
+{
+	printf("\033[1m%c\033[m\017", c);
+}

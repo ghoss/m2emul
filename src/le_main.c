@@ -49,8 +49,8 @@ int main(int argc, char *argv[])
 			break;
 
 		case 't' :
-			// Trace mode enabled
-			trace = true;
+			// Trace mode enabled (implies verbose mode)
+			trace = verbose = true;
 			break;
 
 		case '?' :

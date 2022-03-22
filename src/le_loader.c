@@ -149,7 +149,7 @@ void le_parse_objfile(FILE *f)
                 le_memerr();
 
             VERBOSE(
-                "Module %s [%d], %d data words/%d code bytes\n", 
+                "Module %s [%d]  (%d data words/%d code bytes)\n", 
                 modid.name, mod->id.idx, 
                 mod->data_sz, mod->code_sz
             )
