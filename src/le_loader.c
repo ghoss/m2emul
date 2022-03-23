@@ -151,7 +151,7 @@ void le_parse_objfile(FILE *f)
 
             VERBOSE(
                 "Module %s [%d]  "
-				"(%d data words/%d code bytes, dat_ofs=x%04x)\n",
+				"(%d data words/%d code bytes, offset=x%04x)\n",
                 modid.name, mod->id.idx, 
                 mod->data_sz, mod->code_sz,
 				mod->data_ofs
@@ -469,8 +469,12 @@ bool le_load_initfile(char *fn, char *alt_prefix)
 
 	// Start execution of module at procedure 0
 	VERBOSE("Starting execution.\n")
-	le_execute(top, 0);
+	uint32_t counter = le_execute(top, 0);
 	
-	VERBOSE("Execution terminated normally.\n\n")
+	VERBOSE(
+		"Execution terminated normally.\n"
+		"%u M-Codes processed.\n\n",
+		counter
+	)
 	return true;
 }

@@ -17,7 +17,7 @@
 #include "le_syscall.h"
 #include "le_mcode.h"
 
-#define _HALT	error(1, 0, "Halted at opcode %03o", gs_IR);
+#define _HALT	error(1, 0, "Halted in %s at opcode %03o", modp->id.name, gs_IR);
 
 
 // le_transfer()
@@ -38,10 +38,11 @@ void le_transfer(bool chg, uint16_t to, uint16_t from)
 // Main interpreter loop
 // Executes specified module and procedure
 //
-void le_execute(uint16_t modn, uint16_t procn)
+uint32_t le_execute(uint16_t modn, uint16_t procn)
 {
 	mod_entry_t *modp;	// Pointer to current module
 	uint8_t *code_p;	// Pointer to module code frame
+	uint32_t counter = 0;	// M-code counter
 
 	// le_next()
 	// Fetch next instruction
@@ -102,6 +103,7 @@ void le_execute(uint16_t modn, uint16_t procn)
 
 		// Get next instruction
 		gs_IR = le_next();
+		counter ++;
 
 		// Execute M-Code in IR
 		switch (gs_IR)
@@ -145,9 +147,9 @@ void le_execute(uint16_t modn, uint16_t procn)
 		case 027 : {
 			// LEA  load external address
 			_HALT
-			// uint16_t ext_mod = le_next();		// Module number
-			// uint16_t ext_adr = le_next();		// Data word offset number
-			// es_push(stack[MCI_DFTADR + i] + j);
+			uint16_t ext_mod = le_next();		// Module number
+			uint16_t ext_adr = le_next();		// Data word offset number
+			es_push(module_tab[ext_mod].data_ofs + ext_adr);
 			break;
 		}
 
@@ -188,7 +190,6 @@ void le_execute(uint16_t modn, uint16_t procn)
 
 		case 033 : {
 			// JPF  jump forward
-			_HALT
 			uint16_t i = le_next();
 			gs_PC += i - 1;
 			break;
@@ -216,7 +217,6 @@ void le_execute(uint16_t modn, uint16_t procn)
 
 		case 036 :
 			// ORJP  short circuit OR
-			_HALT
 			if (es_pop() == 0)
 			{
 				gs_PC ++;
@@ -231,7 +231,6 @@ void le_execute(uint16_t modn, uint16_t procn)
 
 		case 037 :
 			// ANDJP  short circuit AND
-			_HALT
 			if (es_pop() == 0)
 			{
 				es_push(0);
@@ -259,20 +258,21 @@ void le_execute(uint16_t modn, uint16_t procn)
 
 		case 042 : {
 			// LEW  load external word
-			_HALT;
-			// uint8_t ext_mod = le_next();		// Module number
-			// uint8_t ext_adr = le_next();		// Data word offset
-			// es_push(module_tab[ext_mod].data[ext_adr]);
+			_HALT
+			uint8_t ext_mod = le_next();		// Module number
+			uint8_t ext_adr = le_next();		// Data word offset
+			es_push(dsh_mem[module_tab[ext_mod].data_ofs + ext_adr]);
 			break;
 		}
 
 		case 043 : {
 			// LED
-			_HALT;
-			// uint8_t ext_mod = le_next();		// Module number
-			// uint8_t ext_adr = le_next();		// Data word offset
-			// es_push(module_tab[ext_mod].data[ext_adr]);
-			// es_push(module_tab[ext_mod].data[ext_adr + 1]);
+			_HALT
+			uint8_t ext_mod = le_next();		// Module number
+			uint8_t ext_adr = le_next();		// Data word offset
+			uint16_t ofs = module_tab[ext_mod].data_ofs + ext_adr;
+			es_push(dsh_mem[ofs]);
+			es_push(dsh_mem[ofs + 1]);
 			break;
 		}
 
@@ -297,19 +297,20 @@ void le_execute(uint16_t modn, uint16_t procn)
 		case 062 : {
 			// SEW  store external word
 			_HALT
-			// uint8_t ext_mod = le_next();		// Module number
-			// uint8_t ext_adr = le_next();		// Data word offset
-			// module_tab[ext_mod].data[ext_adr] = es_pop();
+			uint8_t ext_mod = le_next();		// Module number
+			uint8_t ext_adr = le_next();		// Data word offset
+			dsh_mem[module_tab[ext_mod].data_ofs + ext_adr] = es_pop();
 			break;
 		}
 
 		case 063 : {
 			// SED  store external double word
 			_HALT
-			// uint8_t ext_mod = le_next();		// Module number
-			// uint8_t ext_adr = le_next();		// Data word offset
-			// module_tab[ext_mod].data[ext_adr + 1] = es_pop();
-			// module_tab[ext_mod].data[ext_adr] = es_pop();
+			uint8_t ext_mod = le_next();		// Module number
+			uint8_t ext_adr = le_next();		// Data word offset
+			uint16_t ofs = module_tab[ext_mod].data_ofs + ext_adr;
+			dsh_mem[ofs + 1] = es_pop();
+			dsh_mem[ofs] = es_pop();
 			break;
 		}
 
@@ -362,7 +363,6 @@ void le_execute(uint16_t modn, uint16_t procn)
 
 		case 0160 ... 0177 : {
 			// SSW0 - SSW15  store stack-addressed word
-			_HALT
 			uint16_t k = es_pop();
 			uint16_t i = es_pop() + (gs_IR & 0xf);
 			dsh_mem[i] = k;
@@ -414,16 +414,14 @@ void le_execute(uint16_t modn, uint16_t procn)
 			uint16_t i = es_pop();
 			uint16_t j = es_pop();
 			uint16_t k = dsh_mem[j + (i >> 1)];
-			es_push((i & 1) ? (k & 0xff) : (k >> 8));
+			es_push((i & 1) ? (uint8_t) k : (k >> 8));
 			break;
 		}
 
 		case 0206 : {
 			// LXW  load indexed word
-			_HALT
 			uint16_t i = es_pop();
-			i += es_pop();
-			es_push(dsh_mem[gs_S + i]);
+			es_push(dsh_mem[i + es_pop()]);
 			break;
 		}
 
@@ -555,18 +553,16 @@ void le_execute(uint16_t modn, uint16_t procn)
 				dsh_mem[j] = (dsh_mem[j] & 0xff00) + k;
 			}
 			else{
-				dsh_mem[j] = (k << 8) | (dsh_mem[j] & 0xff);
+				dsh_mem[j] = (k << 8) | (uint8_t) dsh_mem[j];
 			}
 			break;
 		}
 
 		case 0226 : {
 			// SXW  store indexed word
-			_HALT
 			uint16_t k = es_pop();
 			uint16_t i = es_pop();
-			i += es_pop();
-			dsh_mem[gs_S + i] = k;
+			dsh_mem[i + es_pop()] = k;
 			break;
 		}
 
@@ -584,43 +580,42 @@ void le_execute(uint16_t modn, uint16_t procn)
 
 		case 0230 : {
 			// FADD  floating add
-			_HALT
+			floatword_t y = es_dpop();
 			floatword_t x = es_dpop();
-			x.f += es_dpop().f;
+			x.f += y.f;
 			es_dpush(x);
 			break;
 		}
 
 		case 0231 : {
 			// FSUB  floating subtract
-			_HALT
+			floatword_t y = es_dpop();
 			floatword_t x = es_dpop();
-			x.f -= es_dpop().f;
+			x.f -= y.f;
 			es_dpush(x);
 			break;
 		}
 
 		case 0232 : {
 			// FMUL  floating multiply
-			_HALT
+			floatword_t y = es_dpop();
 			floatword_t x = es_dpop();
-			x.f *= es_dpop().f;
+			x.f *= y.f;
 			es_dpush(x);
 			break;
 		}
 
 		case 0233 : {
 			// FDIV  floating divide
-			_HALT
+			floatword_t y = es_dpop();
 			floatword_t x = es_dpop();
-			x.f /= es_dpop().f;
+			x.f /= y.f;
 			es_dpush(x);
 			break;
 		}
 
 		case 0234 : {
 			// FCMP  floating compare
-			_HALT
 			float x = es_dpop().f;
 			float y = es_dpop().f;
 			if (x > y)
@@ -641,7 +636,6 @@ void le_execute(uint16_t modn, uint16_t procn)
 		}
 
 		case 0235 : {
-			_HALT
 			// FABS  floating absolute value
 			floatword_t x = es_dpop();
 			if (x.f < 0.0) 
@@ -652,7 +646,6 @@ void le_execute(uint16_t modn, uint16_t procn)
 
 		case 0236 : {
 			// FNEG  floating negative
-			_HALT
 			floatword_t x = es_dpop();
 			x.f = -x.f;
 			es_dpush(x);
@@ -661,24 +654,28 @@ void le_execute(uint16_t modn, uint16_t procn)
 
 		case 0237 : {
 			// FFCT  floating functions
-			_HALT
 			uint8_t i = le_next();
 			floatword_t z;
 
 			switch (i)
 			{
 				case 0 :
+					// Convert INTEGER to REAL
 					z.f = (float) es_pop();
 					es_dpush(z);
 					break;
 
-				case 2 :
-					z = es_dpop();
-					es_push((uint16_t) z.f);
+				case 1 :
+					// CONVERT REAL TO REAL (?)
+					es_dpush(es_dpop());
 					break;
 
-				case 1 :
-				case 3 :
+				case 2 :
+					// Convert REAL to INTEGER
+					z = es_dpop();
+					es_push((int16_t) z.f);
+					break;
+
 				default :
 					le_trap(modp, TRAP_INV_FFCT);
 					break;
@@ -913,7 +910,6 @@ void le_execute(uint16_t modn, uint16_t procn)
 
 		case 0274 : {
 			// UMOD
-			_HALT
 			uint16_t j = es_pop();
 			uint16_t i = es_pop();
 			es_push(i % j);
@@ -1211,7 +1207,6 @@ void le_execute(uint16_t modn, uint16_t procn)
 
 		case 0334 : {
 			// MOD
-			_HALT
 			int16_t j = es_pop();
 			int16_t i = es_pop();
 			es_push(i % j);
@@ -1370,16 +1365,14 @@ void le_execute(uint16_t modn, uint16_t procn)
 
 		case 0352 : {
 			// ALLOC  allocate block
-			_HALT
 			uint16_t i = es_pop();
-			es_push(gs_S);
 			if (gs_S < gs_H - i)
 			{
+				es_push(gs_S);
 				gs_S += i;
 			}
 			else
 			{
-				gs_S = es_pop();
 				le_trap(modp, TRAP_STACK_OVF);
 			}
 			break;
@@ -1407,7 +1400,7 @@ void le_execute(uint16_t modn, uint16_t procn)
 			uint16_t call_mod = dsh_mem[gs_S];
 			if (call_mod & 0xff00)
 				// Was an external call
-				set_module_ptr(call_mod & 0xff);
+				set_module_ptr((uint8_t) call_mod);
 			break;
 		}
 
@@ -1467,4 +1460,6 @@ void le_execute(uint16_t modn, uint16_t procn)
 			break;
 		}
 	} while (gs_PC != 0);
+
+	return counter;
 }

@@ -80,7 +80,7 @@ void le_trap(mod_entry_t *modp, uint16_t n)
 			VERBOSE("%s\n", trap_descr[n])
 			break;
 	}
-	error(1, 0, "%s: It's a TRAP (%d)!  PC=%07o", modp->id.name, n, gs_PC);
+	error(1, 0, "It's a TRAP (%d)!  %s:%07o", n, modp->id.name, gs_PC);
 }
 
 
