@@ -12,7 +12,7 @@ Work in progress. Not quite usable yet!
   * Register and stack display
   * Inspection of data words (variables)
 * Interpreter can already execute simple Modula-2 programs.
-* Most M-Codes are still disabled for debugging however (due to ongoing tests).
+* Many M-Codes are still disabled for debugging however (due to ongoing tests).
 
 ## Key Features Compared To The Lilith Machine
 ### Functionality in General
