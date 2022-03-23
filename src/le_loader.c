@@ -143,15 +143,18 @@ void le_parse_objfile(FILE *f)
 
             // Allocate memory for module's code and data
             mod->data_sz = le_rword(f);			// words
+			mod->data_ofs = data_top;
+			data_top += mod->data_sz;
             mod->code_sz = le_rword(f) << 1;	// bytes
-            if ((((mod->data = calloc(mod->data_sz, MACH_WORD_SZ))) == NULL)
-                || (((mod->code = calloc(mod->code_sz, 1)) == NULL)))
+            if (((mod->code = calloc(mod->code_sz, 1)) == NULL))
                 le_memerr();
 
             VERBOSE(
-                "Module %s [%d]  (%d data words/%d code bytes)\n", 
+                "Module %s [%d]  "
+				"(%d data words/%d code bytes, dat_ofs=x%04x)\n",
                 modid.name, mod->id.idx, 
-                mod->data_sz, mod->code_sz
+                mod->data_sz, mod->code_sz,
+				mod->data_ofs
             )
             le_rword(f);
             break;
@@ -199,7 +202,7 @@ void le_parse_objfile(FILE *f)
 
                 // Read byte-swapped data block into memory at offset a
 				while (n-- > 0)
-					mod->data[a ++] = le_rword(f);
+					dsh_mem[a ++] = le_rword(f);
                 break;
             }
 
@@ -467,6 +470,7 @@ bool le_load_initfile(char *fn, char *alt_prefix)
 	// Start execution of module at procedure 0
 	VERBOSE("Starting execution.\n")
 	le_execute(top, 0);
+	
 	VERBOSE("Execution terminated normally.\n\n")
 	return true;
 }

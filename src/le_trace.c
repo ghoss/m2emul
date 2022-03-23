@@ -207,17 +207,19 @@ void le_show_registers(mod_entry_t *mod)
 {
 	FILE *ofd = stdout;
 
-	OUT("%s: S=x%04x, L=x%04x, ES=x%04x", 
-		mod->id.name, 
-		gs_S, gs_L, gs_SP
+	OUT("%s: S=x%04X, G=x%04X, L=x%04X, ES=x%02X", 
+		mod->id.name, gs_S - data_top,
+		gs_G, gs_L - data_top, gs_SP
 	)
 
 	// Display stack
-	for (uint8_t i = 0; i < gs_S; i ++)
+	for (uint16_t i = data_top; i < gs_S; i ++)
 	{
-		if (i % 8 == 0)
+		uint16_t j = i - data_top;
+
+		if (j % 8 == 0)
 			OUT("\nSTK:")
-		OUT("  %02d: %04X", i, stack[i])
+		OUT("  %02X: %04X", j, dsh_mem[i])
 	}
 
 	// Display expression stack
@@ -225,7 +227,7 @@ void le_show_registers(mod_entry_t *mod)
 	{
 		if (i % 8 == 0)
 			OUT("\nES: ")
-		OUT("  %02d: %04X", i, (*mem_exstack)[i])
+		OUT("  %02X: %04X", i, exs_mem[i])
 	}
 	OUT("\n")
 }
@@ -280,7 +282,7 @@ void le_monitor(mod_entry_t *mod)
 				// Show contents of data word
 				uint16_t w;
 				scanf("%hd", &w);
-				VERBOSE("data[%d]=x%04x\n", w, mod->data[w]);
+				VERBOSE("data[%d]=x%04x\n", w, dsh_mem[gs_G + w]);
 				break;
 			}
 

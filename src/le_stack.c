@@ -18,7 +18,7 @@
 //
 void es_push(uint16_t x)
 {
-    (*mem_exstack)[gs_SP++] = x;
+    exs_mem[gs_SP++] = x;
 }
 
 
@@ -27,7 +27,7 @@ void es_push(uint16_t x)
 //
 uint16_t es_pop()
 {
-    return (*mem_exstack)[--gs_SP];
+    return exs_mem[--gs_SP];
 }
 
 
@@ -73,10 +73,10 @@ void es_save()
     c = 0;
     while (! es_empty())
     {
-        stack[gs_S ++] = es_pop();
+        dsh_mem[gs_S ++] = es_pop();
         c ++;
     }
-    stack[gs_S ++] = c;
+    dsh_mem[gs_S ++] = c;
 }
 
 
@@ -87,9 +87,9 @@ void es_restore()
 {
     uint16_t c;
 
-    c = stack[--gs_S];
+    c = dsh_mem[--gs_S];
     while (c-- > 0)
-        es_push(stack[--gs_S]);
+        es_push(dsh_mem[--gs_S]);
 }
 
 
@@ -98,13 +98,14 @@ void es_restore()
 //
 void es_save_regs()
 {
-    es_save();
-    stack[gs_P] = gs_G;
-    stack[gs_P + 1] = gs_L;
-    stack[gs_P + 2] = gs_PC;
-    stack[gs_P + 3] = gs_M;
-    stack[gs_P + 4] = gs_S;
-    stack[gs_P + 5] = gs_H + 24;
+	error(1, 0, "save_regs not implemented yet");
+    // es_save();
+    // stack[gs_P] = gs_G;
+    // stack[gs_P + 1] = gs_L;
+    // stack[gs_P + 2] = gs_PC;
+    // stack[gs_P + 3] = gs_M;
+    // stack[gs_P + 4] = gs_S;
+    // stack[gs_P + 5] = gs_H + 24;
 }
 
 
@@ -113,17 +114,18 @@ void es_save_regs()
 //
 void es_restore_regs(bool chg_mask)
 {
-    gs_G = stack[gs_P];
-    gs_F = stack[gs_G];
-    gs_L = stack[gs_P + 1];
-    gs_PC = stack[gs_P + 2];
+	error(1, 0, "restore_regs not implemented yet");
+    // gs_G = stack[gs_P];
+    // gs_F = stack[gs_G];
+    // gs_L = stack[gs_P + 1];
+    // gs_PC = stack[gs_P + 2];
 
-    if (chg_mask)
-        gs_M = stack[gs_P + 3];
+    // if (chg_mask)
+    //     gs_M = stack[gs_P + 3];
     
-    gs_S = stack[gs_P + 4];
-    gs_H = stack[gs_P + 5] - 24;
-    es_restore();
+    // gs_S = stack[gs_P + 4];
+    // gs_H = stack[gs_P + 5] - 24;
+    // es_restore();
 }
 
 
@@ -134,13 +136,13 @@ void stk_mark(uint16_t x, bool ext)
     uint16_t i = gs_S;
 
 	// S + 0 = previous module number + high bit set or zero for local call
-	stack[i] = ext ? (x | 0xff00) : x;
+	dsh_mem[i] = ext ? (x | 0xff00) : x;
 
 	// S + 1 = previous local proc. data ptr
 	// S + 2 = previous PC
-	stack[i + 1] = gs_L;
-    stack[i + 2] = gs_PC;
+	dsh_mem[i + 1] = gs_L;
+    dsh_mem[i + 2] = gs_PC;
 
-    gs_S += 3;
+    gs_S += 4;
     gs_L = i;
 }

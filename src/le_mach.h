@@ -24,26 +24,25 @@
 
 // Stack and expression stack
 //
-#define MACH_STK_SZ		65536	// Stack size in words
-#define MACH_HEAP_SZ	65536	// Heap size in words
-#define MACH_EXSTK_SZ	15		// Expression stack size in words
+#define MACH_DSHMEM_SZ	65536	// Memory (data+stack+heap) size in words
+#define MACH_EXSMEM_SZ	15		// Expression stack size in words
 
 // Machine word = 16 bits
 #define MACH_WORD_SZ    sizeof(uint16_t)
 
-// Stack Memory
-extern uint16_t *stack;
+// Main memory for data, stack and heap
+extern uint16_t *dsh_mem;	// Points to base of main memory
+extern uint16_t data_top;	// Offset of 1st word after data areas
 
-// Expression stack
-typedef uint16_t mach_exstack_t[MACH_EXSTK_SZ];
-extern mach_exstack_t *mem_exstack;
+// Memory for expression stack
+extern uint16_t *exs_mem;
 
 
 // Module table
 //
-#define MOD_NAME_MAX    16		// Maximum length of module names
-#define MOD_TAB_MAX     255		// Max. size of module table
-#define PROC_TAB_MAX	255		// Max. size of procedure entry table
+#define MOD_NAME_MAX    16			// Maximum length of module names
+#define MOD_TAB_MAX     UINT8_MAX	// Max. size of module table
+#define PROC_TAB_MAX	UINT8_MAX	// Max. size of procedure entry table
 
 typedef char mod_name_t[MOD_NAME_MAX + 1];
 
@@ -73,8 +72,8 @@ typedef struct proctmp_t {
 typedef struct {
     mod_id_t id;				// Module name and key
     uint8_t *code;				// Pointer to module's code frame
-	uint16_t *data;				// Pointer to module's data frame
     uint32_t code_sz;           // Size of code frame in bytes
+	uint16_t data_ofs;			// Offset to module's data in DSH
     uint32_t data_sz;           // Size of data frame in words
     proctmp_t *proc_tmp;		// Pointer to temp. procedure linked list
     uint16_t *proc;             // Pointer to final procedure table
@@ -90,7 +89,6 @@ extern mod_entry_t *module_tab;		// Pointer to module table
 //
 extern uint16_t gs_PC;		// Program counter
 extern uint16_t gs_IR;		// Instruction register
-extern uint16_t gs_F;		// Code frame base address
 extern uint16_t gs_G;		// Data frame base address
 extern uint16_t gs_H;		// Stack limit address
 extern uint16_t gs_L;		// Local segment address

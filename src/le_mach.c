@@ -14,12 +14,12 @@
 
 // Memory structures defined in le_mach.h
 //
-mach_exstack_t *mem_exstack;
-uint16_t *stack;
+uint16_t *dsh_mem;
+uint16_t *exs_mem;
+uint16_t data_top;
 
 uint16_t gs_PC;
 uint16_t gs_IR;
-uint16_t gs_F;
 uint16_t gs_G;
 uint16_t gs_H;
 uint16_t gs_L;
@@ -108,7 +108,7 @@ mod_entry_t *init_mod_entry(mod_id_t *mod)
         p->import = NULL;
         p->import_n = 0;
         p->code = NULL;
-        p->data = NULL;
+        p->data_ofs = UINT16_MAX;
         p->proc_tmp = NULL;
         p->proc_n = 0;
     }
@@ -141,19 +141,21 @@ void init_module_tab()
 //
 void mach_init()
 {
-    // Stack memory
-    if ((stack = malloc(MACH_WORD_SZ * MACH_STK_SZ)) == NULL)
+    // Allocate data/stack/heap memory and zero it
+    if ((dsh_mem = calloc(MACH_DSHMEM_SZ, MACH_WORD_SZ)) == NULL)
 	{
-        error(1, errno, "Can't allocate stack");
+        error(1, errno, "Can't allocate DSH memory");
 	}
 
-	// Clear first 3 words of stack to allow RTN from topmost module
-	bzero(stack, MACH_WORD_SZ * 3);
-	gs_S = 3;
+	// data_top points to the top of the module data area
+	data_top = 0;
+
+	// Initialize pointer to top of heap
+	gs_H = MACH_DSHMEM_SZ - 1;
 
     // Allocate and clear expression stack
     gs_SP = 0;
-    if ((mem_exstack = malloc(sizeof(mach_exstack_t))) == NULL)
+    if ((exs_mem = calloc(MACH_EXSMEM_SZ, MACH_WORD_SZ)) == NULL)
         error(1, errno, "Can't allocate expression stack");
 
     // Initialize and clear module table
