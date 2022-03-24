@@ -16,9 +16,15 @@
 //
 typedef struct {
     union {
-        float f;
-        uint32_t l;
-        uint16_t w[2];
+        float f;		// Float representation
+        uint32_t l;		// 32-bit long representation
+        uint16_t w[2];	// High/low 16-bit word representation
+		struct			// IEEE 754 bitfield representation
+		{
+			uint32_t m:23;	// Mantissa
+			uint32_t e:8;	// Exponent
+			uint32_t s:1;	// Sign
+		} bf __attribute__((packed));
     };
 } floatword_t;
 

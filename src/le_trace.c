@@ -58,8 +58,7 @@ const char *trap_descr[] = {
 	[TRAP_INT_ARITH] = "Integer arithmetic under/overflow",
 	[TRAP_CODE_OVF] = "Code frame overrun",
 	[TRAP_INV_FFCT] = "Invalid FFCT function",
-	[TRAP_INV_OPC] = "Invalid opcode",
-	[TRAP_SYSTEM] = "Compiler-triggered trap"
+	[TRAP_INV_OPC] = "Invalid opcode"
 };
 
 
@@ -76,11 +75,10 @@ void le_trap(mod_entry_t *modp, uint16_t n)
 		case TRAP_CODE_OVF :
 		case TRAP_INV_FFCT :
 		case TRAP_INV_OPC :
-		case TRAP_SYSTEM :
 			VERBOSE("%s\n", trap_descr[n])
 			break;
 	}
-	error(1, 0, "It's a TRAP (%d)!  %s:%07o", n, modp->id.name, gs_PC);
+	error(1, 0, "It's a TRAP (%d)!  %s:%07o", n, modp->id.name, gs_PC - 1);
 }
 
 

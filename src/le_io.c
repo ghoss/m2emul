@@ -18,8 +18,20 @@
 //
 uint16_t le_ioread(uint16_t chan)
 {
-    error(1, 0, "READ not implemented (%d)", chan);
-	return 0;
+	uint16_t val;
+
+	switch (chan)
+	{
+		case 0 :
+			// Display flag (1 = "new", 0 = standard 768x592)
+			val = 0;
+			break;
+
+		default :
+			error(1, 0, "READ from channel #%d not implemented)", chan);
+			break;
+	}
+	return val;
 }
 
 

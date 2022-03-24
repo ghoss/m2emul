@@ -17,7 +17,7 @@
 #include "le_syscall.h"
 #include "le_mcode.h"
 
-#define _HALT	error(1, 0, "Halted in %s at opcode %03o", modp->id.name, gs_IR);
+#define _HALT	{ gs_PC --; error(1, 0, "Halted in %s:%07o at opcode %03o", modp->id.name, gs_PC, gs_IR); }
 
 
 // le_transfer()
@@ -76,6 +76,7 @@ uint32_t le_execute(uint16_t modn, uint16_t procn)
 	// Set stack to first location above data frames
 	// and clear first 3 bytes to allow RTN from main module (#1)
 	gs_PC = gs_L = 0;
+	gs_M = 0;
 	gs_S = data_top;
 	stk_mark(0, false);
 
@@ -155,7 +156,6 @@ uint32_t le_execute(uint16_t modn, uint16_t procn)
 
 		case 030 :
 			// JPC  jump conditional
-			_HALT
 			if (es_pop() == 0)
 			{
 				uint16_t i = le_next2();
@@ -169,7 +169,6 @@ uint32_t le_execute(uint16_t modn, uint16_t procn)
 
 		case 031 : {
 			// JP   jump
-			_HALT
 			uint16_t i = le_next2();
 			gs_PC += i - 2;
 			break;
@@ -258,7 +257,6 @@ uint32_t le_execute(uint16_t modn, uint16_t procn)
 
 		case 042 : {
 			// LEW  load external word
-			_HALT
 			uint8_t ext_mod = le_next();		// Module number
 			uint8_t ext_adr = le_next();		// Data word offset
 			es_push(dsh_mem[module_tab[ext_mod].data_ofs + ext_adr]);
@@ -357,7 +355,6 @@ uint32_t le_execute(uint16_t modn, uint16_t procn)
 
 		case 0140 ... 0157 :
 			// LSW0 - LSW15  load stack addressed word
-			_HALT
 			es_push(dsh_mem[es_pop() + (gs_IR & 0xf)]);
 			break;
 
@@ -601,6 +598,7 @@ uint32_t le_execute(uint16_t modn, uint16_t procn)
 			floatword_t y = es_dpop();
 			floatword_t x = es_dpop();
 			x.f *= y.f;
+			x.bf.e -= 2;	// 4x*4y=16xy, so divide by 4 to fix result
 			es_dpush(x);
 			break;
 		}
@@ -610,6 +608,7 @@ uint32_t le_execute(uint16_t modn, uint16_t procn)
 			floatword_t y = es_dpop();
 			floatword_t x = es_dpop();
 			x.f /= y.f;
+			x.bf.e += 2;	// 4x/4y=xy, so multiply by 4 to fix result
 			es_dpush(x);
 			break;
 		}
@@ -656,12 +655,13 @@ uint32_t le_execute(uint16_t modn, uint16_t procn)
 			// FFCT  floating functions
 			uint8_t i = le_next();
 			floatword_t z;
-
 			switch (i)
 			{
 				case 0 :
 					// Convert INTEGER to REAL
+					// Multiply result by 4 to fix to IEEE754 standard
 					z.f = (float) es_pop();
+					z.bf.e += 2;
 					es_dpush(z);
 					break;
 
@@ -672,7 +672,9 @@ uint32_t le_execute(uint16_t modn, uint16_t procn)
 
 				case 2 :
 					// Convert REAL to INTEGER
+					// Divide value by 4 to fix to IEEE754 standard
 					z = es_dpop();
+					z.bf.e -= 2;
 					es_push((int16_t) z.f);
 					break;
 
@@ -685,10 +687,9 @@ uint32_t le_execute(uint16_t modn, uint16_t procn)
 
 		case 0240 : {
 			// READ
-			_HALT
 			uint16_t i = es_pop();
 			uint16_t k = es_pop();
-			dsh_mem[gs_S + i] = le_ioread(k);
+			dsh_mem[i] = le_ioread(k);
 			break;
 		}
 
@@ -735,19 +736,17 @@ uint32_t le_execute(uint16_t modn, uint16_t procn)
 
 		case 0247 :
 			// SYS  rarely used system functions
-			le_system_call();
+			le_system_call(le_next());
 			break;
 
 		case 0250 :
 			// ENTP  entry priority
-			_HALT
 			dsh_mem[gs_L + 3] = gs_M;
 			gs_M = 0xffff << (16 - le_next());
 			break;
 
 		case 0251 :
 			// EXP  exit priority
-			_HALT
 			gs_M = dsh_mem[gs_L + 3];
 			break;
 
@@ -805,7 +804,6 @@ uint32_t le_execute(uint16_t modn, uint16_t procn)
 
 		case 0260 : {
 			// LODFW  reload stack after function return
-			_HALT
 			uint16_t i = es_pop();
 			es_restore();
 			es_push(i);
@@ -824,7 +822,6 @@ uint32_t le_execute(uint16_t modn, uint16_t procn)
 
 		case 0262 :
 			// STORE
-			_HALT
 			es_save();
 			break;
 
@@ -844,7 +841,6 @@ uint32_t le_execute(uint16_t modn, uint16_t procn)
 
 		case 0265 : {
 			// COPT  copy element on top of expression stack
-			_HALT
 			uint16_t i = es_pop();
 			es_push(i);
 			es_push(i);
@@ -1009,8 +1005,7 @@ uint32_t le_execute(uint16_t modn, uint16_t procn)
 
 		case 0304 : {
 			// TRAP
-			// es_pop to get trap number
-			le_trap(modp, TRAP_SYSTEM);
+			le_trap(modp, es_pop());
 			break;
 		}
 
@@ -1227,14 +1222,14 @@ uint32_t le_execute(uint16_t modn, uint16_t procn)
 
 		case 0337 : {
 			// MOVF  move frame
-			_HALT
 			uint16_t i = es_pop();
 			uint16_t j = es_pop();
 			j += es_pop() << 2;
 			uint16_t k = es_pop();
 			k += es_pop() << 2;
-			while (i-- > 0)
-				dsh_mem[k ++] = dsh_mem[j ++];
+			VERBOSE("MOVF ignored (%06X <- %06X for %d bytes)\n", k, j, i)
+			// while (i-- > 0)
+			// 	dsh_mem[k ++] = dsh_mem[j ++];
 			break;
 		}
 

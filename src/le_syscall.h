@@ -16,7 +16,7 @@
 
 // Function declarations
 //
-void le_system_call();
+void le_system_call(uint8_t n);
 void le_supervisor_call();
 
 #endif

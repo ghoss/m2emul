@@ -321,6 +321,11 @@ void le_fix_extcalls(uint8_t top)
 
 					switch (opc)
 					{
+						case 022 :	// LIW
+							// Fixups for these opcodes occur (why?),
+							// but we ignore them
+							break;
+
 						case 043 :	// LED
 						case 063 :	// SED
 						case 027 :	// LEA
