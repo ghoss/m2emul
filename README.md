@@ -10,6 +10,7 @@ Work in progress. Not quite usable yet!
   * Single-step execution
   * Set breakpoint / execute to breakpoint
   * Register and stack display
+  * Procedure call chain display
   * Inspection of data words (variables)
 * Interpreter can already execute simple Modula-2 programs.
 * Many M-Codes are still disabled for debugging however (due to ongoing tests).

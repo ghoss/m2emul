@@ -62,6 +62,29 @@ const char *trap_descr[] = {
 };
 
 
+// le_show_callchain()
+// Displays the current procedure call chain
+//
+void le_show_callchain(mod_entry_t *modp)
+{
+	uint16_t adr = gs_L;
+	while (adr > data_top)
+	{
+		uint16_t m = dsh_mem[adr];
+		uint16_t pc = dsh_mem[adr + 2] - 1;
+
+		if (m & 0xff00)
+		{
+			m &= 0xff;
+			modp = &(module_tab[m]);
+		}
+		VERBOSE("%16s(%d):%07o\n", modp->id.name, modp->id.idx, pc)
+		
+		adr = dsh_mem[adr + 1];
+	}
+}
+
+
 // le_trap()
 // Trap handler
 //
@@ -78,7 +101,12 @@ void le_trap(mod_entry_t *modp, uint16_t n)
 			VERBOSE("%s\n", trap_descr[n])
 			break;
 	}
-	error(1, 0, "It's a TRAP (%d)!  %s:%07o", n, modp->id.name, gs_PC - 1);
+
+	le_show_callchain(modp);
+	error(1, 0, 
+		"It's a TRAP (%d)!  %d:%07o (%s)", 
+		n, modp->id.idx, gs_PC - 1, modp->id.name
+	);
 }
 
 
@@ -284,6 +312,11 @@ void le_monitor(mod_entry_t *mod)
 				break;
 			}
 
+			case 'c' : 
+				// Show procedure callchain
+				le_show_callchain(mod);
+				break;
+				
 			case 'b' : {
 				// Set breakpoint
 				scanf("%hhd:%ho", &bp_module, &bp_PC);

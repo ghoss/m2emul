@@ -35,9 +35,9 @@ void le_system_call(uint8_t n)
 			// ("getp" = get process?)
 			// See Programs.MOD
 		case 3 :
-			// "seth" (?)
+			// Set stack limit
 		case 4 :
-			// "geth" (?)
+			// Get stack limit
 			break;
 		
 		default :

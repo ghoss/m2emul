@@ -52,6 +52,7 @@ void le_monitor_usage()
 		"g\tExecute until next breakpoint or end of program\n"
 		"r\tSwitch register/stack display on/off\n"
 		"d num\tShow contents of data word 'num'\n"
+		"c\tShow current procedure call chain\n"
 		"b m:pc\tSet breakpoint to program counter pc in module number m\n"
 		"q\tExit interpreter\n"
         "h, ?\tShow this help summary\n\n"
