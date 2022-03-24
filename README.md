@@ -28,6 +28,16 @@ Work in progress. Not quite usable yet!
 * Framebuffer compatible with original code for graphical output (currently, the emulator only runs in terminal-based text mode).
 * Optional support for disk image files in Medos-2 format (such as those provided for Jos Dreesen's *Emulith* emulator).
 
+## Compiling And Installation
+1. Download the .tar.gz packages from the "[Releases](https://github.com/ghoss/m2emul/releases)" page.
+2. Extract and build:
+    ```
+    $ tar xzf m2emul-x.y.tar.gz
+    $ cd m2emul-x.y
+    $ ./configure
+    $ make && make install
+    ```
+
 ## Usage
 ```
 USAGE: mule [-hV] [object_file]
