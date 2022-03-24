@@ -27,3 +27,16 @@ Work in progress. Not quite usable yet!
 ### Planned Features
 * Framebuffer compatible with original code for graphical output (currently, the emulator only runs in terminal-based text mode).
 * Optional support for disk image files in Medos-2 format (such as those provided for Jos Dreesen's *Emulith* emulator).
+
+## Usage
+```
+USAGE: mule [-hV] [object_file]
+
+-t      Enable trace mode (runtime debugging)
+-h      Show this help information
+-V      Show version information
+
+-v      Verbose mode
+
+object_file is the filename of a Lilith M-Code (OBJ) file.
+```
