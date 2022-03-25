@@ -1025,6 +1025,7 @@ uint32_t le_execute(uint16_t modn, uint16_t procn)
 			int16_t hi = es_pop();
 			int16_t i = es_pop();
 			es_push(i);
+			VERBOSE("CHKZ %d in 0..%d\n", i, hi);
 			if ((i < 0) || (i > hi))
 				le_trap(modp, TRAP_INDEX);
 			break;

@@ -10,7 +10,7 @@
 # Process this file with autoconf to produce a configure script.
 
 AC_PREREQ([2.71])
-AC_INIT([mule], [0.1-alpha], [])
+AC_INIT([mule], [0.1-alpha], [Guido Hoss])
 AM_INIT_AUTOMAKE([-Werror foreign subdir-objects])
 AC_CONFIG_HEADERS([config.h])
 

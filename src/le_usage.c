@@ -19,10 +19,10 @@
 //
 void le_prog_version()
 {
-    fprintf(stderr, 
-        PKG " v" PACKAGE_VERSION " (" VERSION_BUILD_DATE ")\n"
+    fprintf(stderr, PKG " v" PACKAGE_VERSION 
+		" by " PACKAGE_BUGREPORT" (" VERSION_BUILD_DATE ")\n"
         "Modula-2 M-Code Emulator\n\n"
-    );
+	);
 }
 
 
