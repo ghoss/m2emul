@@ -424,9 +424,8 @@ uint32_t le_execute(uint16_t modn, uint16_t procn)
 
 		case 0207 : {
 			// LXD  load indexed double word
-			_HALT
 			uint16_t i = es_pop() << 1;
-			i += gs_S + es_pop();
+			i += es_pop();
 			es_push(dsh_mem[i]);
 			es_push(dsh_mem[i + 1]);
 			break;
@@ -434,59 +433,59 @@ uint32_t le_execute(uint16_t modn, uint16_t procn)
 
 		case 0210 : {
 			// DADD  double add
-			_HALT
+			floatword_t y = es_dpop();
+			floatword_t x = es_dpop();
 			floatword_t z;
-			z.l = es_dpop().l;
-			z.l += es_dpop().l;
+			z.l = x.l + y.l;
 			es_dpush(z);
 			break;
 		}
 
 		case 0211 : {
 			// DSUB  double subtract
-			_HALT
+			floatword_t y = es_dpop();
+			floatword_t x = es_dpop();
 			floatword_t z;
-			z.l = es_dpop().l;
-			z.l -= es_dpop().l;
+			z.l = x.l - y.l;
 			es_dpush(z);
 			break;
 		}
 
 		case 0212 : {
 			// DMUL  double multiply
-			_HALT
+			floatword_t y = es_dpop();
+			floatword_t x = es_dpop();
 			floatword_t z;
-			z.l = es_dpop().l;
-			z.l *= es_dpop().l;
+			z.l = x.l * y.l;
 			es_dpush(z);
 			break;
 		}
 
 		case 0213 : {
 			// DDIV  double divide
-			_HALT
-			uint32_t j = es_pop();
+			floatword_t y = es_dpop();
 			floatword_t x = es_dpop();
-			es_push(x.l % j);
-			es_push(x.l / j);
+			floatword_t z;
+			z.l = x.l / y.l;
+			es_dpush(z);
 			break;
 		}
 
 		case 0216 : {
 			// DSHL  double shift left
-			_HALT
 			floatword_t x = es_dpop();
-			x.l <<= 1;
-			es_dpush(x);
+			floatword_t z;
+			z.l = x.l << 1;
+			es_dpush(z);
 			break;
 		}
 
 		case 0217 : {
 			// DSHR  double shift right
-			_HALT
 			floatword_t x = es_dpop();
-			x.l >>= 1;
-			es_dpush(x);
+			floatword_t z;
+			z.l = x.l >> 1;
+			es_dpush(z);
 			break;
 		}
 
@@ -501,10 +500,9 @@ uint32_t le_execute(uint16_t modn, uint16_t procn)
 
 		case 0221 : {
 			// SSD  store stack double word
-			_HALT
 			uint16_t k = es_pop();
 			uint16_t j = es_pop();
-			uint16_t i = gs_S + es_pop() + le_next();
+			uint16_t i = es_pop() + le_next();
 			dsh_mem[i] = j;
 			dsh_mem[i + 1] = k;
 			break;
@@ -512,10 +510,9 @@ uint32_t le_execute(uint16_t modn, uint16_t procn)
 
 		case 0222 : {
 			// SSD0  store stack double word
-			_HALT
 			uint16_t k = es_pop();
 			uint16_t j = es_pop();
-			uint16_t i = gs_S + es_pop();
+			uint16_t i = es_pop();
 			dsh_mem[i] = j;
 			dsh_mem[i + 1] = k;
 			break;
@@ -540,18 +537,13 @@ uint32_t le_execute(uint16_t modn, uint16_t procn)
 		}
 
 		case 0225 : {
-			// SXB  store indxed byte
-			_HALT
+			// SXB  store indexed byte
 			uint16_t k = es_pop();
 			uint16_t i = es_pop();
-			uint16_t j = gs_S + es_pop() + (i >> 1);
-			if (i & 1)
-			{
-				dsh_mem[j] = (dsh_mem[j] & 0xff00) + k;
-			}
-			else{
-				dsh_mem[j] = (k << 8) | (uint8_t) dsh_mem[j];
-			}
+			uint16_t j = es_pop() + (i >> 1);
+			dsh_mem[j] = (i & 1) ? 
+				((dsh_mem[j] & 0xff00) | k) : 
+				((dsh_mem[j] & 0x00ff) | (k << 8));
 			break;
 		}
 
@@ -665,10 +657,15 @@ uint32_t le_execute(uint16_t modn, uint16_t procn)
 					es_dpush(z);
 					break;
 
-				case 1 :
-					// CONVERT REAL TO REAL (?)
-					es_dpush(es_dpop());
+				case 1 : {
+					// CONVERT long (32-bit) integer TO REAL
+					// Multiply result by 4 to fix to IEEE754 standard
+					floatword_t z1 = es_dpop();
+					z.f = (float) z1.l;
+					z.bf.e += 2;
+					es_dpush(z);
 					break;
+				}
 
 				case 2 :
 					// Convert REAL to INTEGER
@@ -678,8 +675,17 @@ uint32_t le_execute(uint16_t modn, uint16_t procn)
 					es_push((int16_t) z.f);
 					break;
 
+				case 3 :
+					// Fix REAL with specified bias
+					uint16_t j = es_pop();
+					z = es_dpop();
+					VERBOSE("FFCT #3\nz=%f, j=%d\n", z.f, j)
+					VERBOSE("z.m=%d z.e=%d, z.s=%d\n", z.bf.m, z.bf.e, z.bf.s)
+					// le_trap(modp, TRAP_INV_FFCT);
+					es_dpush(z);
+					break;
+
 				default :
-					le_trap(modp, TRAP_INV_FFCT);
 					break;
 			}
 			break;
@@ -812,7 +818,6 @@ uint32_t le_execute(uint16_t modn, uint16_t procn)
 
 		case 0261 :
 			// LODFD  reload stack after function return
-			_HALT
 			uint16_t i = es_pop();
 			uint16_t j = es_pop();
 			es_restore();
@@ -1025,7 +1030,6 @@ uint32_t le_execute(uint16_t modn, uint16_t procn)
 			int16_t hi = es_pop();
 			int16_t i = es_pop();
 			es_push(i);
-			VERBOSE("CHKZ %d in 0..%d\n", i, hi);
 			if ((i < 0) || (i > hi))
 				le_trap(modp, TRAP_INDEX);
 			break;
