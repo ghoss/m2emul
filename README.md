@@ -2,7 +2,7 @@
 ## Overview
 This will become an interpreter and virtual machine for Lilith Modula-2 M-Code object files.
 
-Work in progress. Not quite usable yet!
+Work in progress.
 
 ## Current Development Status
 * M-Code Loader fully functional (can load and stage main module and its dependencies).
@@ -13,7 +13,7 @@ Work in progress. Not quite usable yet!
   * Procedure call chain display
   * Inspection of data words (variables)
 * Interpreter can already execute simple Modula-2 programs.
-* Many M-Codes are still disabled for debugging however (due to ongoing tests).
+* Some M-Codes are still disabled for debugging however (due to ongoing tests).
 
 ## Key Features Compared To The Lilith Machine
 ### Functionality in General
