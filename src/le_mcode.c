@@ -675,15 +675,25 @@ uint32_t le_execute(uint16_t modn, uint16_t procn)
 					es_push((int16_t) z.f);
 					break;
 
-				case 3 :
+				case 3 : {
 					// Fix REAL with specified bias
-					uint16_t j = es_pop();
-					z = es_dpop();
-					VERBOSE("FFCT #3\nz=%f, j=%d\n", z.f, j)
-					VERBOSE("z.m=%d z.e=%d, z.s=%d\n", z.bf.m, z.bf.e, z.bf.s)
-					// le_trap(modp, TRAP_INV_FFCT);
+					uint16_t bias = es_pop() >> 7;	// bias (exponent)
+					z = es_dpop();					// REAL
+
+					uint8_t ex = z.bf.e;			// Exponent
+					uint32_t mask = 1 << 22;		// MSB of mantissa
+
+					// Increase exponent and rshift mantissa (= DIV 2)
+					while (ex < bias)
+					{
+						ex ++;
+						z.bf.m = (z.bf.m >> 1) | mask;
+						mask = 0;
+					}
+					z.bf.e = (z.bf.e < bias) ? 0 : 1;
 					es_dpush(z);
 					break;
+				}
 
 				default :
 					break;
@@ -695,6 +705,7 @@ uint32_t le_execute(uint16_t modn, uint16_t procn)
 			// READ
 			uint16_t i = es_pop();
 			uint16_t k = es_pop();
+			VERBOSE("adr %d, chan %d\n", i, k)
 			dsh_mem[i] = le_ioread(k);
 			break;
 		}
@@ -1135,14 +1146,10 @@ uint32_t le_execute(uint16_t modn, uint16_t procn)
 			break;
 
 		case 0324 : {
-			// IN
-			_HALT
+			// IN (bitset)
 			uint16_t j = es_pop();
 			uint16_t i = es_pop();
-			if (i > 15)
-				es_push(0);
-			else
-				es_push(((0x8000 >> i) & j) ? 1 : 0);
+			es_push((0x8000 >> i) & j);
 			break;
 		}
 

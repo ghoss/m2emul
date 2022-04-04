@@ -12,6 +12,11 @@
 #include "le_mach.h"
 #include "le_io.h"
 
+// Structures for terminal input and output
+//
+WINDOW *app_win;
+char kbd_buf;
+
 
 // le_ioread()
 // Read word from hardware channel
@@ -27,8 +32,21 @@ uint16_t le_ioread(uint16_t chan)
 			val = 0;
 			break;
 
+		case 1 : {
+			// Keyboard status register
+			kbd_buf = getch();
+			if (kbd_buf > 0) VERBOSE("got ch %c %d", kbd_buf, kbd_buf)
+			return (kbd_buf > 0) ? 0x8000 : 0;
+			break;
+		}
+
+		case 2 :
+			// Keyboard data register
+			error(1, 0, "KBD reg %d\n", chan);
+			break;
+
 		default :
-			error(1, 0, "READ from channel #%d not implemented)", chan);
+			error(1, 0, "READ from channel #%d not implemented", chan);
 			break;
 	}
 	return val;
@@ -49,5 +67,29 @@ void le_iowrite(uint16_t chan, uint16_t w)
 //
 void le_putchar(char c)
 {
-	printf("\033[1m%c\033[m\017", c);
+	attron(A_BOLD);
+	printw("%c", c);
+	attroff(A_BOLD);
+}
+
+
+// le_cleanup_io()
+//
+// Reset terminal to previous state
+//
+void le_cleanup_io()
+{
+	endwin();
+}
+
+
+// le_init_io()
+// Initializes channel-based IO
+// (e.g. file descriptors for non-blocking getc)
+//
+void le_init_io()
+{
+	app_win = initscr();
+	timeout(0);
+	scrollok(app_win, true);
 }

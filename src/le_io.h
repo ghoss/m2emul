@@ -17,5 +17,7 @@
 uint16_t le_ioread(uint16_t chan);
 void le_iowrite(uint16_t chan, uint16_t w);
 void le_putchar(char ch);
+void le_init_io();
+void le_cleanup_io();
 
 #endif

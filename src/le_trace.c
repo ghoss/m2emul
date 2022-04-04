@@ -15,10 +15,10 @@
 
 
 // Output shorthand
-#define OUT(...)		fprintf(ofd, __VA_ARGS__);
+#define OUT(...)		printw(__VA_ARGS__);
 
 // Global variables
-bool trace = false;			// Enables trace mode
+bool le_trace = false;		// Enables trace mode
 bool show_regs = true;		// Enables register/stack display
 
 // Breakpoint variables
@@ -78,7 +78,7 @@ void le_show_callchain(mod_entry_t *modp)
 			m &= 0xff;
 			modp = &(module_tab[m]);
 		}
-		VERBOSE("%16s(%d):%07o\n", modp->id.name, modp->id.idx, pc)
+		VERBOSE("\n%16s(%d):%07o\n", modp->id.name, modp->id.idx, pc)
 		
 		adr = dsh_mem[adr + 1];
 	}
@@ -117,7 +117,6 @@ void le_decode(mod_entry_t *mod, uint16_t pc)
 {
     uint16_t a1 = 0;
     uint8_t b1 = 0;
-	FILE *ofd = stdout;
 
     // Print octal byte
     uint8_t pr_byte()
@@ -142,7 +141,7 @@ void le_decode(mod_entry_t *mod, uint16_t pc)
     uint16_t i = mcode * LE_MNEM_LEN;
     char c = mnem_tab[i + (LE_MNEM_LEN - 1)];
     OUT( 
-        "  %07o  %03o  %c%c%c%c", 
+        "\n  %07o  %03o  %c%c%c%c", 
         pc, mcode, mnem_tab[i], mnem_tab[i+1], mnem_tab[i+2], mnem_tab[i+3]
     )
     pc ++;
@@ -231,8 +230,6 @@ void le_decode(mod_entry_t *mod, uint16_t pc)
 //
 void le_show_registers(mod_entry_t *mod)
 {
-	FILE *ofd = stdout;
-
 	OUT("%s: S=x%04X, G=x%04X, L=x%04X, ES=x%02X", 
 		mod->id.name, gs_S - data_top,
 		gs_G, gs_L - data_top, gs_SP
@@ -272,7 +269,7 @@ void le_monitor(mod_entry_t *mod)
 		if ((bp_module == mod->id.idx) && (gs_PC == bp_PC))
 		{
 			// Re-enable monitor and disable breakpoint
-			trace = true;
+			le_trace = true;
 		}
 		else
 		{
@@ -282,7 +279,7 @@ void le_monitor(mod_entry_t *mod)
 	}
 	
 	// Return if trace mode disabled
-	if (! trace) return;
+	if (! le_trace) return;
 
 	// Decode current instruction
 	le_decode(mod, gs_PC);
@@ -290,9 +287,11 @@ void le_monitor(mod_entry_t *mod)
 		le_show_registers(mod);
 
 	// Enter command loop
-	printf("cmd> ");
+	refresh();
+	printw("cmd> ");
+	timeout(-1);
 	while (! quit) {
-		switch (getchar())
+		switch (getch())
 		{
 			case '\n' :
 				// Ignore EOL
@@ -301,13 +300,13 @@ void le_monitor(mod_entry_t *mod)
 			case 'r' :
 				// Switch register display on/off
 				show_regs = ! show_regs;
-				VERBOSE("Register display now %s\n", show_regs ? "ON" : "OFF")
+				VERBOSE("\nRegister display now %s\n", show_regs ? "ON" : "OFF")
 				break;
 
 			case 'd' : {
 				// Show contents of data word
 				uint16_t w;
-				scanf("%hd", &w);
+				scanw("%hd", &w);
 				VERBOSE("data[%d]=x%04x\n", w, dsh_mem[gs_G + w]);
 				break;
 			}
@@ -319,7 +318,7 @@ void le_monitor(mod_entry_t *mod)
 				
 			case 'b' : {
 				// Set breakpoint
-				scanf("%hhd:%ho", &bp_module, &bp_PC);
+				scanw("%hhd:%ho", &bp_module, &bp_PC);
 				VERBOSE(
 					"Breakpoint set to %s:%07o\n", 
 					module_tab[bp_module].id.name, bp_PC
@@ -348,11 +347,15 @@ void le_monitor(mod_entry_t *mod)
 
 			case 'q' :
 				// Exit
+				VERBOSE("\nQuitting\n")
 				exit(0);
 
 			default :
 				continue;
 		}
-		printf("cmd> ");
+		if (! quit)
+			printw("cmd> ");
 	}
+	
+	timeout(0);
 }

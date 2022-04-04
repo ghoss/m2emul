@@ -13,6 +13,7 @@
 #define _LE_MACH_H   1
 
 #include <stdio.h>
+#include <ncurses.h>
 #include <error.h>
 #include <errno.h>
 #include <stdlib.h>
@@ -109,8 +110,8 @@ mod_entry_t *init_mod_entry(mod_id_t *mod_id);
 
 
 // Tracing and debugging
-extern bool verbose;
-extern bool trace;
-#define VERBOSE(...)  if (verbose) fprintf(stdout, __VA_ARGS__);
+extern bool le_verbose;
+extern bool le_trace;
+#define VERBOSE(...)  if (le_verbose) printw(__VA_ARGS__);
 
 #endif

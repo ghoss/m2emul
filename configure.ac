@@ -18,6 +18,8 @@ AC_CONFIG_HEADERS([config.h])
 AC_PROG_CC
 
 # Checks for libraries.
+AC_CHECK_LIB(ncurses, initscr, ,
+  [AC_MSG_ERROR([ncurses not found])])
 
 # Checks for header files.
 

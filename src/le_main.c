@@ -11,6 +11,7 @@
 
 #include <libgen.h>
 #include "le_mach.h"
+#include "le_io.h"
 #include "le_loader.h"
 #include "le_mcode.h"
 #include "le_usage.h"
@@ -18,10 +19,20 @@
 
 // Global variables
 //
-bool verbose = false;	// Checked by all procedures to enable verbosity
+bool le_verbose = false;	// Checked by all procedures to enable verbosity
 
 
-// main
+// cleanup()
+// Exit cleanup routine
+//
+void cleanup()
+{
+	le_cleanup_io();
+}
+
+
+// main()
+// Main program entry point
 //
 int main(int argc, char *argv[])
 {
@@ -45,12 +56,12 @@ int main(int argc, char *argv[])
 
 		case 'v' :
 			// Verbose mode
-			verbose = true;
+			le_verbose = true;
 			break;
 
 		case 't' :
 			// Trace mode enabled (implies verbose mode)
-			trace = verbose = true;
+			le_trace = le_verbose = true;
 			break;
 
 		case '?' :
@@ -84,7 +95,9 @@ int main(int argc, char *argv[])
 		else
 		{
 			// Initialize machine
+			atexit(cleanup);
 			mach_init();
+			le_init_io();
 			
 			// Try to load basename of input file
 			le_load_initfile(basn, "SYS.");

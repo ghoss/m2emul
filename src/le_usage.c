@@ -19,7 +19,7 @@
 //
 void le_prog_version()
 {
-    fprintf(stderr, PKG " v" PACKAGE_VERSION 
+    printw(PKG " v" PACKAGE_VERSION 
 		" by " PACKAGE_BUGREPORT" (" VERSION_BUILD_DATE ")\n"
         "Modula-2 M-Code Emulator\n\n"
 	);
@@ -31,7 +31,7 @@ void le_prog_version()
 //
 void le_prog_usage()
 {
-    fprintf(stderr,
+    printw(
         "USAGE: " PKG " [-hV] [object_file]\n\n"
  		"-t\tEnable trace mode (runtime debugging)\n"
 		"-h\tShow this help information\n"
@@ -47,7 +47,7 @@ void le_prog_usage()
 //
 void le_monitor_usage()
 {
-    fprintf(stderr,
+    printw(
         "t\tExecute one instruction\n"
 		"g\tExecute until next breakpoint or end of program\n"
 		"r\tSwitch register/stack display on/off\n"
