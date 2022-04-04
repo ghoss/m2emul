@@ -35,14 +35,13 @@ uint16_t le_ioread(uint16_t chan)
 		case 1 : {
 			// Keyboard status register
 			kbd_buf = getch();
-			if (kbd_buf > 0) VERBOSE("got ch %c %d", kbd_buf, kbd_buf)
-			return (kbd_buf > 0) ? 0x8000 : 0;
+			return (kbd_buf > 0) ? 1 : 0;
 			break;
 		}
 
 		case 2 :
 			// Keyboard data register
-			error(1, 0, "KBD reg %d\n", chan);
+			return kbd_buf;
 			break;
 
 		default :
@@ -91,5 +90,6 @@ void le_init_io()
 {
 	app_win = initscr();
 	timeout(0);
+	noecho();
 	scrollok(app_win, true);
 }

@@ -90,22 +90,10 @@ void le_show_callchain(mod_entry_t *modp)
 //
 void le_trap(mod_entry_t *modp, uint16_t n)
 {
-	switch (n)
-	{
-		case TRAP_STACK_OVF :
-		case TRAP_INDEX :
-		case TRAP_INT_ARITH :
-		case TRAP_CODE_OVF :
-		case TRAP_INV_FFCT :
-		case TRAP_INV_OPC :
-			VERBOSE("%s\n", trap_descr[n])
-			break;
-	}
-
 	le_show_callchain(modp);
 	error(1, 0, 
-		"It's a TRAP (%d)!  %d:%07o (%s)", 
-		n, modp->id.idx, gs_PC - 1, modp->id.name
+		"TRAP #%d: %s\r\n%d:%07o (%s)", 
+		n, trap_descr[n], modp->id.idx, gs_PC - 1, modp->id.name
 	);
 }
 

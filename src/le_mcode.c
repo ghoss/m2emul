@@ -705,7 +705,6 @@ uint32_t le_execute(uint16_t modn, uint16_t procn)
 			// READ
 			uint16_t i = es_pop();
 			uint16_t k = es_pop();
-			VERBOSE("adr %d, chan %d\n", i, k)
 			dsh_mem[i] = le_ioread(k);
 			break;
 		}
@@ -1358,7 +1357,7 @@ uint32_t le_execute(uint16_t modn, uint16_t procn)
 			uint16_t i = gs_L;
 			uint8_t j = le_next();
 			do {
-				i = dsh_mem[i];
+				i = dsh_mem[i + 1];
 			} while (--j != 0);
 			es_push(i);
 			break;
@@ -1366,8 +1365,7 @@ uint32_t le_execute(uint16_t modn, uint16_t procn)
 
 		case 0351 :
 			// GB1  get base adr 1 level down
-			_HALT
-			es_push(dsh_mem[gs_L]);
+			es_push(dsh_mem[gs_L + 1]);
 			break;
 
 		case 0352 : {
