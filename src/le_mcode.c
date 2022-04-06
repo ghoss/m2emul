@@ -883,10 +883,7 @@ uint32_t le_execute(uint16_t modn, uint16_t procn)
 			// UADD
 			uint16_t j = es_pop();
 			uint16_t i = es_pop();
-			int32_t z = i + j;
-			if (z > UINT16_MAX)
-				le_trap(modp, TRAP_INT_ARITH);
-			es_push(z);
+			es_push(i + j);
 			break;
 		}
 
@@ -894,8 +891,6 @@ uint32_t le_execute(uint16_t modn, uint16_t procn)
 			// USUB
 			uint16_t j = es_pop();
 			uint16_t i = es_pop();
-			if (i < j)
-				le_trap(modp, TRAP_INT_ARITH);
 			es_push(i - j);
 			break;
 		}
@@ -904,10 +899,7 @@ uint32_t le_execute(uint16_t modn, uint16_t procn)
 			// UMUL
 			uint16_t j = es_pop();
 			uint16_t i = es_pop();
-			int32_t z = i * j;
-			if (z > UINT16_MAX)
-				le_trap(modp, TRAP_INT_ARITH);
-			es_push(z);
+			es_push(i * j);
 			break;
 		}
 
@@ -1174,10 +1166,7 @@ uint32_t le_execute(uint16_t modn, uint16_t procn)
 			// IADD
 			int16_t j = es_pop();
 			int16_t i = es_pop();
-			int32_t z = i + j;
-			if (z > INT16_MAX)
-				le_trap(modp, TRAP_INT_ARITH);
-			es_push(z);
+			es_push(i + j);
 			break;
 		}
 
@@ -1185,10 +1174,7 @@ uint32_t le_execute(uint16_t modn, uint16_t procn)
 			// ISUB
 			int16_t j = es_pop();
 			int16_t i = es_pop();
-			int32_t z = i - j;
-			if (z < INT16_MIN)
-				le_trap(modp, TRAP_INT_ARITH);
-			es_push(z);
+			es_push(i - j);
 			break;
 		}
 
@@ -1196,10 +1182,7 @@ uint32_t le_execute(uint16_t modn, uint16_t procn)
 			// IMUL
 			int16_t j = es_pop();
 			int16_t i = es_pop();
-			int32_t z = i * j;
-			if ((z < INT16_MIN) || (z > INT16_MAX))
-				le_trap(modp, TRAP_INT_ARITH);
-			es_push(z);
+			es_push(i * j);
 			break;
 		}
 
@@ -1329,25 +1312,42 @@ uint32_t le_execute(uint16_t modn, uint16_t procn)
 
 		case 0346 : {
 			// UNPK  unpack
-//          (*extract bits i..j from k, then right adjust*)
-			_HALT
-			// uint16_t k = es_pop();
-			// uint16_t j = es_pop();
-			// uint16_t i = es_pop();
-			// es_push(k);
+			// Extract bits i..i+n-1 from x and shift right
+			uint16_t x = es_pop();
+			uint16_t n = es_pop();
+			uint16_t i = es_pop();
+
+			uint16_t sh = 16 - i - n;
+			uint16_t rmask = ((1 << n) - 1) << sh;
+
+			x = (x & rmask) >> sh;
+			es_push(x);
 			break;
 		}
 
 		case 0347 : {
 			// PACK  pack
-//          (*pack the rightmost j-i+1 bits of k into positions
-//            i..j of word stk[adr] *) |
-			_HALT
-			// uint16_t k = es_pop();
-			// uint16_t j = es_pop();
-			// uint16_t i = es_pop();
-			// uint16_t adr = es_pop();
-			// es_push(k);
+			// Pack the rightmost n bits of x into positions
+			// i..i+n-1 of word [adr]
+			uint16_t x = es_pop();
+			uint16_t n = es_pop();
+			uint16_t i = es_pop();
+			uint16_t adr = es_pop();
+
+			// Isolate rightmost n bits
+			uint16_t rmask = (1 << n) - 1;
+			x &= rmask;
+
+
+			// Determine shift amount
+			uint16_t sh = 16 - i - n;
+
+			// Shift both mask and value to target position
+			rmask <<= sh;
+			x <<= sh;
+
+			// Clear and overwrite target bits
+			dsh_mem[adr] = (dsh_mem[adr] & (~rmask)) | x;
 			break;
 		}
 

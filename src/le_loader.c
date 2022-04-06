@@ -201,6 +201,7 @@ void le_parse_objfile(FILE *f)
                     );
 
                 // Read byte-swapped data block into memory at offset a
+				a += mod->data_ofs;
 				while (n-- > 0)
 					dsh_mem[a ++] = le_rword(f);
                 break;

@@ -96,7 +96,7 @@ extern uint16_t gs_L;		// Local segment address
 extern uint16_t gs_S;		// Stack pointer
 extern uint16_t gs_P;  		// Process base address
 extern uint16_t gs_M;		// process interrupt mask (bitset)
-extern uint8_t gs_SP;		// Stack pointer
+extern uint8_t gs_SP;		// Expression stack pointer
 extern bool gs_REQ;			// Interrupt request
 extern uint16_t gs_ReqNo;	// Request number, 8..15
 

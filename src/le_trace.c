@@ -275,14 +275,17 @@ void le_monitor(mod_entry_t *mod)
 		le_show_registers(mod);
 
 	// Enter command loop
-	refresh();
-	printw("cmd> ");
 	timeout(-1);
+	echo();
 	while (! quit) {
+		refresh();
+		VERBOSE("cmd> ")
+
 		switch (getch())
 		{
 			case '\n' :
 				// Ignore EOL
+				printw("\n");
 				continue;
 
 			case 'r' :
@@ -339,11 +342,10 @@ void le_monitor(mod_entry_t *mod)
 				exit(0);
 
 			default :
-				continue;
+				break;
 		}
-		if (! quit)
-			printw("cmd> ");
 	}
 	
 	timeout(0);
+	noecho();
 }

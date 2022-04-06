@@ -78,6 +78,7 @@ void le_putchar(char c)
 //
 void le_cleanup_io()
 {
+	refresh();
 	endwin();
 }
 
