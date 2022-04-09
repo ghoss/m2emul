@@ -1435,14 +1435,12 @@ uint32_t le_execute(uint16_t modn, uint16_t procn)
 
 		case 0357 : {
 			// CLF  call formal procedure
-			_HALT
-			// uint16_t i = dsh_mem[gs_S - 1];
-			// stk_mark(gs_G, true);
-			// uint16_t j = i >> 8;
-			// gs_G = dsh_mem[MCI_DFTADR + j];
-			// gs_F = dsh_mem[gs_G];
-			// gs_PC = (i & 0xff) << 1;
-			// gs_PC = le_next2();
+			uint16_t i = dsh_mem[gs_S - 1];
+			uint16_t call_mod = i >> 8;
+			uint16_t call_proc = i & 0xff;
+			stk_mark(modn, true);
+			set_module_ptr(call_mod);
+			gs_PC = modp->proc[call_proc];
 			break;
 		}
 

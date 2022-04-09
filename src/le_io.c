@@ -69,6 +69,7 @@ void le_putchar(char c)
 	attron(A_BOLD);
 	printw("%c", c);
 	attroff(A_BOLD);
+	refresh();
 }
 
 

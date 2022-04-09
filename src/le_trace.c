@@ -58,7 +58,8 @@ const char *trap_descr[] = {
 	[TRAP_INT_ARITH] = "Integer arithmetic under/overflow",
 	[TRAP_CODE_OVF] = "Code frame overrun",
 	[TRAP_INV_FFCT] = "Invalid FFCT function",
-	[TRAP_INV_OPC] = "Invalid opcode"
+	[TRAP_INV_OPC] = "Invalid opcode",
+	[TRAP_SYSTEM] = "System-triggered trap"
 };
 
 
@@ -297,8 +298,8 @@ void le_monitor(mod_entry_t *mod)
 			case 'd' : {
 				// Show contents of data word
 				uint16_t w;
-				scanw("%hd", &w);
-				VERBOSE("data[%d]=x%04x\n", w, dsh_mem[gs_G + w]);
+				scanw("%hx", &w);
+				VERBOSE("data[%04X]=x%04X\n", w, dsh_mem[gs_G + w]);
 				break;
 			}
 

@@ -112,6 +112,6 @@ mod_entry_t *init_mod_entry(mod_id_t *mod_id);
 // Tracing and debugging
 extern bool le_verbose;
 extern bool le_trace;
-#define VERBOSE(...)  if (le_verbose) printw(__VA_ARGS__);
+#define VERBOSE(...)  if (le_verbose) { printw(__VA_ARGS__); refresh(); }
 
 #endif
