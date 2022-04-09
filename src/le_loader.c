@@ -11,7 +11,6 @@
 
 #include "le_mach.h"
 #include "le_trace.h"
-#include "le_mcode.h"
 #include "le_loader.h"
 
 
@@ -457,7 +456,7 @@ bool le_load_objfile(char *fn, char *alt_prefix)
 // le_load_initfile
 // Loads the initial object file and its dependencies
 //
-bool le_load_initfile(char *fn, char *alt_prefix)
+uint8_t le_load_initfile(char *fn, char *alt_prefix)
 {
     // The new module will be loaded here if successful
     uint8_t top = mach_num_modules();
@@ -468,15 +467,6 @@ bool le_load_initfile(char *fn, char *alt_prefix)
 
     // Fixup all external calls in executable and above
     le_fix_extcalls(top);
-
-	// Start execution of module at procedure 0
-	VERBOSE("Starting execution.\n")
-	uint32_t counter = le_execute(top, 0);
 	
-	VERBOSE(
-		"Execution terminated normally.\n"
-		"%u M-Codes processed.\n\n",
-		counter
-	)
-	return true;
+	return top;
 }

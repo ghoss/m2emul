@@ -14,6 +14,6 @@
 
 // Function declarations
 //
-bool le_load_initfile(char *fn, char *alt_prefix);
+uint8_t le_load_initfile(char *fn, char *alt_prefix);
 
 #endif
