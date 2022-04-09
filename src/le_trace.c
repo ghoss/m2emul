@@ -99,6 +99,43 @@ void le_trap(mod_entry_t *modp, uint16_t n)
 }
 
 
+// le_code_length()
+// Returns the length of the current opcode
+//
+uint8_t le_opcode_len(uint8_t mcode)
+{
+    uint16_t i = mcode * LE_MNEM_LEN;
+	char c = mnem_tab[i + (LE_MNEM_LEN - 1)];
+	uint8_t n;
+
+    switch (c)
+    {
+        case '+' :
+            n = 2;
+            break;
+
+        case '-' :
+        case '*' :
+            n = 3;
+            break;
+
+        case '?' :
+            n = 4;
+            break;
+
+        case '/' :
+            n = 5;
+            break;
+
+        default :
+            // No special type -> print last character of opcode
+            n = 1;
+            break;
+    }
+	return n;
+}
+
+
 // le_decode()
 // Print an opcode and its arguments at PC counter "pc"
 //
@@ -188,6 +225,13 @@ void le_decode(mod_entry_t *mod, uint16_t pc)
             OUT( "\t; ->[%o]", pc + (int16_t) (a1 - 1))
             break;
 
+		case 0204 : {
+			// Load string address
+			uint16_t adr = dsh_mem[gs_G + 2] + mod->code[pc - 1];
+			OUT("\t; \"%.5s...\"", (char *) &(dsh_mem[adr]))
+			break;
+		}
+
         case 0300 :
             // FOR1
             OUT( 
@@ -204,6 +248,11 @@ void le_decode(mod_entry_t *mod, uint16_t pc)
                 pc + (int8_t) (a1 & 0xff) - 2
             )
             break;
+
+		case 0302 :
+			// ENTC
+            OUT( "\t; ->[%o]", pc + (int16_t) (a1 - 1))
+			break;
 
 		case 0355 :
 			// CLX
@@ -320,10 +369,42 @@ void le_monitor(mod_entry_t *mod)
 			}
 
 			case 'g' :
-				// Execute until next breakpoint or end of program
-				breakpoint = true;
-				quit = true;
+				// Execute until next breakpoint
+				if (bp_module != 0)
+				{
+					breakpoint = true;
+					quit = true;
+				}
+				else
+				{
+					VERBOSE("\nNo breakpoint set\n")
+				}
 				continue;
+
+			case 's' : {
+				// Single-step, but skip through proc calls
+				uint8_t mcode = mod->code[gs_PC];
+
+				switch (mcode)
+				{
+					// Don't skip through RTN because of possible
+					// module change. Don't skip through jumps.
+					//
+					case 030 ... 037 :		// Jumps
+					case 0300 ... 0302 :	// FOR1, FOR2, ENTC
+					case 0354 :				// RTN
+						breakpoint = false;
+						break;
+
+					default :
+						bp_module = mod->id.idx;
+						bp_PC = gs_PC + le_opcode_len(mcode);
+						breakpoint = true;
+						break;
+				}
+				quit = true;
+				break;
+			}
 
 			case 'h' :
 			case '?' :
@@ -343,6 +424,7 @@ void le_monitor(mod_entry_t *mod)
 				exit(0);
 
 			default :
+				VERBOSE("\nUnknown command\n")
 				break;
 		}
 	}

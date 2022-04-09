@@ -990,13 +990,13 @@ uint32_t le_execute(uint16_t modn, uint16_t procn)
 
 		case 0302 : {
 			// ENTC  enter CASE statement
-			_HALT
 			uint16_t i = le_next2();
 			gs_PC += i - 2;
 			uint16_t k = es_pop();
 			uint16_t low = le_next2();
 			uint16_t hi = le_next2();
-			dsh_mem[gs_S++] = gs_PC + ((hi - low) << 1) + 4;
+
+			dsh_mem[gs_S ++] = gs_PC + ((hi - low) << 1) + 4;
 			if ((k >= low) && (k <= hi))
 				gs_PC += (k - low + 1) << 1;
 			i = le_next2();
@@ -1006,8 +1006,7 @@ uint32_t le_execute(uint16_t modn, uint16_t procn)
 
 		case 0303 :
 			// EXC  exit CASE statement
-			_HALT
-			gs_PC = dsh_mem[--gs_S];
+			gs_PC = dsh_mem[-- gs_S];
 			break;
 
 		case 0304 : {

@@ -49,6 +49,7 @@ void le_monitor_usage()
 {
     printw(
         "t\tExecute one instruction\n"
+		"s\tExecute one instruction, but skip through proc calls"
 		"g\tExecute until next breakpoint or end of program\n"
 		"r\tSwitch register/stack display on/off\n"
 		"d num\tShow contents of data word 'num'\n"
