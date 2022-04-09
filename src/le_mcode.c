@@ -1370,7 +1370,7 @@ uint32_t le_execute(uint16_t modn, uint16_t procn)
 		case 0352 : {
 			// ALLOC  allocate block
 			uint16_t i = es_pop();
-			if (gs_S < gs_H - i)
+			if (gs_S < MACH_DSHMEM_SZ - i)
 			{
 				es_push(gs_S);
 				gs_S += i;
@@ -1385,7 +1385,7 @@ uint32_t le_execute(uint16_t modn, uint16_t procn)
 		case 0353 : {
 			// ENTR  enter procedure
 			uint8_t i = le_next();
-			if (gs_S < gs_H - i)
+			if (gs_S < MACH_DSHMEM_SZ - i)
 				gs_S += i;
 			else
 				le_trap(modp, TRAP_STACK_OVF);

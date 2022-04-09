@@ -14,10 +14,15 @@
 
 #include "le_mach.h"
 
+// External variables defined in le_heap.c
+//
+extern uint16_t gs_H;		// Heap limit address
+
 
 // Function declarations
 //
 uint16_t hp_alloc(uint16_t sz);
 void hp_free(uint16_t ptr);
+void hp_init();
 
 #endif

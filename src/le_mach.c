@@ -11,6 +11,7 @@
 
 #include "le_mach.h"
 #include "le_stack.h"
+#include "le_heap.h"
 
 
 // Memory structures defined in le_mach.h
@@ -21,7 +22,6 @@ uint16_t data_top;
 uint16_t gs_PC;
 uint16_t gs_IR;
 uint16_t gs_G;
-uint16_t gs_H;
 uint16_t gs_L;
 uint16_t gs_S;
 uint16_t gs_P;
@@ -149,8 +149,8 @@ void mach_init()
 	// data_top points to the top of the module data area
 	data_top = 0;
 
-	// Initialize pointer to top of heap
-	gs_H = MACH_DSHMEM_SZ - 1;
+	// Allocate heap
+	hp_init();
 
     // Allocate and clear expression stack
 	es_init();

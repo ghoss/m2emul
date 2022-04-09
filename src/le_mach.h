@@ -86,7 +86,6 @@ extern mod_entry_t *module_tab;		// Pointer to module table
 extern uint16_t gs_PC;		// Program counter
 extern uint16_t gs_IR;		// Instruction register
 extern uint16_t gs_G;		// Data frame base address
-extern uint16_t gs_H;		// Stack limit address
 extern uint16_t gs_L;		// Local segment address
 extern uint16_t gs_S;		// Stack pointer
 extern uint16_t gs_P;  		// Process base address
