@@ -12,6 +12,13 @@
 #ifndef _LE_STACK_H
 #define _LE_STACK_H   1
 
+// Expression stack
+#define MACH_EXSMEM_SZ	15		// Expression stack size in words
+
+// Memory for expression stack
+extern uint16_t *exs_mem;
+extern uint8_t gs_SP;		// Expression stack pointer
+
 // Helper type to bytecast floats <-> (double) words
 //
 typedef struct {
@@ -30,6 +37,8 @@ typedef struct {
 
 // Function declarations
 //
+void es_init();
+uint16_t es_stack(uint8_t i);
 void es_save_regs();
 void es_restore_regs(bool chg_mask);
 void es_push(uint16_t x);

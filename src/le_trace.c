@@ -11,6 +11,7 @@
 
 #include "le_usage.h"
 #include "le_mach.h"
+#include "le_stack.h"
 #include "le_trace.h"
 
 
@@ -288,7 +289,7 @@ void le_show_registers(mod_entry_t *mod)
 	{
 		if (i % 8 == 0)
 			OUT("\nES: ")
-		OUT("  %02X: %04X", i, exs_mem[i])
+		OUT("  %02X: %04X", i, es_stack(i))
 	}
 	OUT("\n")
 }

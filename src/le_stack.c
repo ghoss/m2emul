@@ -13,6 +13,31 @@
 #include "le_stack.h"
 
 
+// Memory structures defined in le_stack.h
+//
+uint16_t *exs_mem;
+uint8_t gs_SP;
+
+
+// es_init()
+// Initialize expression stack
+//
+void es_init()
+{
+    gs_SP = 0;
+    if ((exs_mem = calloc(MACH_EXSMEM_SZ, MACH_WORD_SZ)) == NULL)
+        error(1, errno, "Can't allocate expression stack");
+}
+
+
+// es_stack()
+// Return contents of stack position i
+uint16_t es_stack(uint8_t i)
+{
+	return exs_mem[i];
+}
+
+
 // es_push()
 // Push single word
 //

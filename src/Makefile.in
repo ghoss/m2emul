@@ -110,7 +110,7 @@ PROGRAMS = $(bin_PROGRAMS)
 am_mule_OBJECTS = le_main.$(OBJEXT) le_mcode.$(OBJEXT) \
 	le_stack.$(OBJEXT) le_io.$(OBJEXT) le_usage.$(OBJEXT) \
 	le_loader.$(OBJEXT) le_syscall.$(OBJEXT) le_trace.$(OBJEXT) \
-	le_mach.$(OBJEXT)
+	le_heap.$(OBJEXT) le_mach.$(OBJEXT)
 mule_OBJECTS = $(am_mule_OBJECTS)
 mule_LDADD = $(LDADD)
 AM_V_P = $(am__v_P_@AM_V@)
@@ -128,11 +128,11 @@ am__v_at_1 =
 DEFAULT_INCLUDES = -I.@am__isrc@ -I$(top_builddir)
 depcomp = $(SHELL) $(top_srcdir)/depcomp
 am__maybe_remake_depfiles = depfiles
-am__depfiles_remade = ./$(DEPDIR)/le_io.Po ./$(DEPDIR)/le_loader.Po \
-	./$(DEPDIR)/le_mach.Po ./$(DEPDIR)/le_main.Po \
-	./$(DEPDIR)/le_mcode.Po ./$(DEPDIR)/le_stack.Po \
-	./$(DEPDIR)/le_syscall.Po ./$(DEPDIR)/le_trace.Po \
-	./$(DEPDIR)/le_usage.Po
+am__depfiles_remade = ./$(DEPDIR)/le_heap.Po ./$(DEPDIR)/le_io.Po \
+	./$(DEPDIR)/le_loader.Po ./$(DEPDIR)/le_mach.Po \
+	./$(DEPDIR)/le_main.Po ./$(DEPDIR)/le_mcode.Po \
+	./$(DEPDIR)/le_stack.Po ./$(DEPDIR)/le_syscall.Po \
+	./$(DEPDIR)/le_trace.Po ./$(DEPDIR)/le_usage.Po
 am__mv = mv -f
 COMPILE = $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) \
 	$(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS)
@@ -270,6 +270,7 @@ mule_SOURCES = \
 	le_loader.c le_loader.h \
 	le_syscall.c le_syscall.h \
 	le_trace.c le_trace.h \
+	le_heap.c le_heap.h \
 	le_mach.c le_mach.h
 
 all: all-am
@@ -358,6 +359,7 @@ mostlyclean-compile:
 distclean-compile:
 	-rm -f *.tab.c
 
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/le_heap.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/le_io.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/le_loader.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/le_mach.Po@am__quote@ # am--include-marker
@@ -516,7 +518,8 @@ clean: clean-am
 clean-am: clean-binPROGRAMS clean-generic mostlyclean-am
 
 distclean: distclean-am
-		-rm -f ./$(DEPDIR)/le_io.Po
+		-rm -f ./$(DEPDIR)/le_heap.Po
+	-rm -f ./$(DEPDIR)/le_io.Po
 	-rm -f ./$(DEPDIR)/le_loader.Po
 	-rm -f ./$(DEPDIR)/le_mach.Po
 	-rm -f ./$(DEPDIR)/le_main.Po
@@ -570,7 +573,8 @@ install-ps-am:
 installcheck-am:
 
 maintainer-clean: maintainer-clean-am
-		-rm -f ./$(DEPDIR)/le_io.Po
+		-rm -f ./$(DEPDIR)/le_heap.Po
+	-rm -f ./$(DEPDIR)/le_io.Po
 	-rm -f ./$(DEPDIR)/le_loader.Po
 	-rm -f ./$(DEPDIR)/le_mach.Po
 	-rm -f ./$(DEPDIR)/le_main.Po

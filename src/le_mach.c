@@ -10,12 +10,12 @@
 //=====================================================
 
 #include "le_mach.h"
+#include "le_stack.h"
 
 
 // Memory structures defined in le_mach.h
 //
 uint16_t *dsh_mem;
-uint16_t *exs_mem;
 uint16_t data_top;
 
 uint16_t gs_PC;
@@ -26,7 +26,6 @@ uint16_t gs_L;
 uint16_t gs_S;
 uint16_t gs_P;
 uint16_t gs_M;
-uint8_t gs_SP;
 bool gs_REQ;
 uint16_t gs_ReqNo;
 
@@ -154,9 +153,7 @@ void mach_init()
 	gs_H = MACH_DSHMEM_SZ - 1;
 
     // Allocate and clear expression stack
-    gs_SP = 0;
-    if ((exs_mem = calloc(MACH_EXSMEM_SZ, MACH_WORD_SZ)) == NULL)
-        error(1, errno, "Can't allocate expression stack");
+	es_init();
 
     // Initialize and clear module table
     init_module_tab();

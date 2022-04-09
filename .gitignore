@@ -2,6 +2,7 @@
 *.cache
 *.scan
 *.status
+.vscode
 .DS_Store
 .deps
 .dirstamp
