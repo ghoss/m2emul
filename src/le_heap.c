@@ -18,7 +18,7 @@ struct hp_header_t {
 	struct hp_header_t *next;	// Pointer to next header
 	uint16_t adr;				// Address of block in dsh_mem
 	uint16_t sz;				// Size of block
-	bool used;					// Block used indicator
+	uint8_t owner;				// Module index of owner
 };
 
 typedef struct hp_header_t *hp_header_ptr;
@@ -40,9 +40,10 @@ hp_header_ptr hp_hdr_alloc()
 
 // le_heap_alloc()
 // Allocate sz words on heap and return a pointer
-// to the memory address (heap index)
+// to the memory address (heap index). Block is
+// registered to module index "mod".
 //
-uint16_t hp_alloc(uint16_t sz)
+uint16_t hp_alloc(uint8_t mod, uint16_t sz)
 {
 	hp_header_ptr cur = heap_top;
 	hp_header_ptr prev = NULL;
@@ -50,7 +51,7 @@ uint16_t hp_alloc(uint16_t sz)
 	// Scan block list for suitable gaps
 	while (cur != NULL)
 	{
-		if ((! cur->used) && (cur->sz >= sz))
+		if ((cur->owner == 0) && (cur->sz >= sz))
 		{
 			// Suitable gap found
 			if (cur->sz > sz)
@@ -63,16 +64,13 @@ uint16_t hp_alloc(uint16_t sz)
 				p->adr = cur->adr;
 				cur->adr += p->sz;
 				cur->sz = sz;
-				p->used = false;
+				p->owner = 0;
 			}
-			cur->used = true;
+			cur->owner = mod;
 			break;
 		}
-		else
-		{
-			prev = cur;
-			cur = cur->next;
-		}
+		prev = cur;
+		cur = cur->next;
 	}
 
 	// At end of block list?
@@ -88,7 +86,7 @@ uint16_t hp_alloc(uint16_t sz)
 			gs_H -= sz;
 			cur->adr = gs_H;
 			cur->sz = sz;
-			cur->used = true;
+			cur->owner = mod;
 		}
 		else
 		{
@@ -100,11 +98,12 @@ uint16_t hp_alloc(uint16_t sz)
 }
 
 
-// le_heap_free()
+// hp_free_int()
 // Deallocate the heap memory previously allocated
-// to "ptr"
+// to "ptr" if by_ptr=true, or allocated to "mod"
+// if by_ptr=false.
 //
-void hp_free(uint16_t ptr)
+void hp_free_int(uint8_t mod, uint16_t ptr, bool by_ptr)
 {
 	hp_header_ptr cur = heap_top;
 	hp_header_ptr prev = NULL;
@@ -115,40 +114,53 @@ void hp_free(uint16_t ptr)
 		p->adr = q->adr;
 		p->next = q->next;
 		free(q);
+
+		// Increase heap top if lowest block freed
+		if (p->next == NULL)
+			gs_H = p->adr;
+	}
+
+	bool is_match(hp_header_ptr p)
+	{
+		return ((by_ptr && (p->adr == ptr)) ||
+			((! by_ptr) && (p->owner == mod)));
+	}
+
+	bool is_free(hp_header_ptr p)
+	{
+		return ((by_ptr && (p->owner == 0)) ||
+			((! by_ptr) && (p->owner = mod)));
 	}
 
 	// Scan block list for address
 	while (cur != NULL)
 	{
-		if (cur->adr == ptr)
+		if (is_match(cur))
 		{
 			// Found
-			if (cur->used)
+			if (cur->owner != 0)
 			{
 				// Valid pointer, proceed to release
-				cur->used = false;
+				cur->owner = 0;
 
 				// Consolidate with next block
-				if ((cur->next != NULL) && (! cur->next->used))
+				if ((cur->next != NULL) && is_free(cur->next))
 					consolidate(cur, cur->next);
 
 				// Consolidate with previous block
-				if ((prev != NULL) && (! prev->used))
+				if ((prev != NULL) && is_free(prev))
 				{
 					consolidate(prev, cur);
-					prev->used = false;
+					prev->owner = 0;
 				}
-			}
-			else
-			{
-				error(1, 0, "Pointer *%04X already released before", ptr);
+
+				// Return after one deallocation if pointer mode
+				if (by_ptr)
+					return;
 			}
 		}
-		else
-		{
-			prev = cur;
-			cur = cur->next;
-		}
+		prev = cur;
+		cur = cur->next;
 	}
 
 	// At end of block list?
@@ -157,6 +169,24 @@ void hp_free(uint16_t ptr)
 		// Pointer not found
 		error(1, 0, "Pointer *%04X invalid", ptr);
 	}
+}
+
+
+// hp_free()
+// Frees specified pointer
+//
+void hp_free(uint16_t ptr)
+{
+	hp_free_int(0, ptr, true);
+}
+
+
+// hp_free_all()
+// Frees all blocks belonging to the specified module
+//
+void hp_free_all(uint8_t mod)
+{
+	hp_free_int(mod, 0, false);
 }
 
 
@@ -171,4 +201,5 @@ void hp_init()
 	heap_top->adr = gs_H;
 	heap_top->next = NULL;
 	heap_top->sz = 0;
+	heap_top->owner = 0;
 }
