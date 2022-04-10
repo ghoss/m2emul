@@ -38,7 +38,7 @@ void le_transfer(bool chg, uint16_t to, uint16_t from)
 // Main interpreter loop
 // Executes specified module and procedure
 //
-uint32_t le_execute(uint16_t modn, uint16_t procn)
+uint32_t le_execute(uint8_t modn, uint16_t procn)
 {
 	mod_entry_t *modp;	// Pointer to current module
 	uint8_t *code_p;	// Pointer to module code frame
@@ -747,7 +747,7 @@ uint32_t le_execute(uint16_t modn, uint16_t procn)
 
 		case 0246 :
 			// SVC  system hook (emulator only)
-			le_supervisor_call();
+			le_supervisor_call(modn, le_next());
 			break;
 
 		case 0247 :
