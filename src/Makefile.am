@@ -20,4 +20,5 @@ mule_SOURCES = \
 	le_syscall.c le_syscall.h \
 	le_trace.c le_trace.h \
 	le_heap.c le_heap.h \
+	le_filesys.c le_filesys.h \
 	le_mach.c le_mach.h

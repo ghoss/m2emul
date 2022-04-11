@@ -32,7 +32,7 @@ void le_prog_version()
 void le_prog_usage()
 {
     printw(
-        "USAGE: " PKG " [-hV] [object_file]\n\n"
+        "USAGE: " PKG " [-hV] [-d path] [object_file]\n\n"
  		"-t\tEnable trace mode (runtime debugging)\n"
 		"-h\tShow this help information\n"
         "-V\tShow version information\n\n"

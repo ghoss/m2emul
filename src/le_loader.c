@@ -463,7 +463,7 @@ uint8_t le_load_initfile(char *fn, char *alt_prefix)
 
     // Load executable and its dependencies
     if (! le_load_objfile(fn, alt_prefix))
-        return false;
+        return 0;
 
     // Fixup all external calls in executable and above
     le_fix_extcalls(top);

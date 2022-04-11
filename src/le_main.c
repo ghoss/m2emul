@@ -101,11 +101,13 @@ int main(int argc, char *argv[])
 			
 			// Try to load basename of input file
 			uint8_t top = le_load_initfile(basn, "SYS.");
-
-			// Execute module
-			VERBOSE("Starting execution.\n")
-			le_execute(top, 0);
-			VERBOSE("Execution terminated normally.\n")
+			if (top > 0)
+			{
+				// Execute module
+				VERBOSE("Starting execution.\n")
+				le_execute(top, 0);
+				VERBOSE("Execution terminated normally.\n")
+			}
 		}
 		free(fn1);
 		free(fn2);

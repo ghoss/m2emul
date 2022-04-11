@@ -530,7 +530,7 @@ uint32_t le_execute(uint8_t modn, uint16_t procn)
 
 		case 0224 : {
 			// TS  test and set
-			uint16_t adr = gs_G + es_pop();
+			uint16_t adr = es_pop();
 			es_push(dsh_mem[adr]);
 			dsh_mem[adr] = 1;
 			break;
@@ -874,8 +874,8 @@ uint32_t le_execute(uint8_t modn, uint16_t procn)
 			uint16_t adr = es_pop();
 
 			// Copy words from memory into stack
-			while (sz-- > 0)
-				dsh_mem[gs_S ++] = dsh_mem[adr ++];
+			memcpy(&(dsh_mem[gs_S]), &(dsh_mem[adr]), sz << 1);
+			gs_S += sz;
 			break;
 		}
 
@@ -1221,6 +1221,7 @@ uint32_t le_execute(uint8_t modn, uint16_t procn)
 			uint16_t k = es_pop();
 			k += es_pop() << 2;
 			VERBOSE("MOVF ignored (%06X <- %06X for %d bytes)\n", k, j, i)
+			_HALT
 			// while (i-- > 0)
 			// 	dsh_mem[k ++] = dsh_mem[j ++];
 			break;
@@ -1228,12 +1229,10 @@ uint32_t le_execute(uint8_t modn, uint16_t procn)
 
 		case 0340 : {
 			// MOV  move block
-			_HALT
 			uint16_t k = es_pop();
 			uint16_t j = es_pop();
 			uint16_t i = es_pop();
-			while (k-- > 0)
-				dsh_mem[i ++] = dsh_mem[j ++];
+			memcpy(&(dsh_mem[i]), &(dsh_mem[j]), k << 1);
 			break;
 		}
 
