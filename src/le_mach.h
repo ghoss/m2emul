@@ -100,6 +100,7 @@ void mach_init();
 uint8_t mach_num_modules();
 mod_entry_t *find_mod_entry(mod_id_t *mod_id);
 mod_entry_t *init_mod_entry(mod_id_t *mod_id);
+uint16_t mach_unload_top();
 
 
 // Tracing and debugging

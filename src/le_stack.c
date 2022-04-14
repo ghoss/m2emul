@@ -118,42 +118,6 @@ void es_restore()
 }
 
 
-// es_save_regs()
-// Save registers to stack
-//
-void es_save_regs()
-{
-	error(1, 0, "save_regs not implemented yet");
-    // es_save();
-    // stack[gs_P] = gs_G;
-    // stack[gs_P + 1] = gs_L;
-    // stack[gs_P + 2] = gs_PC;
-    // stack[gs_P + 3] = gs_M;
-    // stack[gs_P + 4] = gs_S;
-    // stack[gs_P + 5] = gs_H + 24;
-}
-
-
-// es_restore_regs()
-// Restore registers from stack
-//
-void es_restore_regs(bool chg_mask)
-{
-	error(1, 0, "restore_regs not implemented yet");
-    // gs_G = stack[gs_P];
-    // gs_F = stack[gs_G];
-    // gs_L = stack[gs_P + 1];
-    // gs_PC = stack[gs_P + 2];
-
-    // if (chg_mask)
-    //     gs_M = stack[gs_P + 3];
-    
-    // gs_S = stack[gs_P + 4];
-    // gs_H = stack[gs_P + 5] - 24;
-    // es_restore();
-}
-
-
 // stk_mark()
 // 
 void stk_mark(uint16_t x, bool ext)

@@ -105,7 +105,7 @@ int main(int argc, char *argv[])
 			{
 				// Execute module
 				VERBOSE("Starting execution.\n")
-				le_execute(top, 0);
+				le_execute(top);
 				VERBOSE("Execution terminated normally.\n")
 			}
 		}

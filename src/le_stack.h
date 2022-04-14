@@ -39,8 +39,6 @@ typedef struct {
 //
 void es_init();
 uint16_t es_stack(uint8_t i);
-void es_save_regs();
-void es_restore_regs(bool chg_mask);
 void es_push(uint16_t x);
 uint16_t es_pop();
 void es_dpush(floatword_t d);

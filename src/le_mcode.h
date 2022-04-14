@@ -14,6 +14,6 @@
 
 // Function declarations
 //
-uint32_t le_execute(uint8_t mod, uint16_t proc);
+uint32_t le_execute(uint8_t mod);
 
 #endif

@@ -150,7 +150,7 @@ void le_parse_objfile(FILE *f)
 
             VERBOSE(
                 "Module %s [%d]  "
-				"(%d data words/%d code bytes, offset=x%04x)\n",
+				"(%d data words/%d code bytes, offset=%d)\n",
                 modid.name, mod->id.idx, 
                 mod->data_sz, mod->code_sz,
 				mod->data_ofs

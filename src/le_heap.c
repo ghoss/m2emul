@@ -164,10 +164,10 @@ void hp_free_int(uint8_t mod, uint16_t ptr, bool by_ptr)
 	}
 
 	// At end of block list?
-	if (cur == NULL)
+	if ((cur == NULL) && by_ptr)
 	{
 		// Pointer not found
-		error(1, 0, "Pointer *%04X invalid", ptr);
+		error(1, 0, "Heap pointer *%04X invalid", ptr);
 	}
 }
 

@@ -12,9 +12,12 @@
 #include <string.h>
 #include "le_mach.h"
 #include "le_stack.h"
+#include "le_heap.h"
 #include "le_io.h"
 #include "le_trace.h"
 #include "le_syscall.h"
+#include "le_filesys.h"
+#include "le_loader.h"
 #include "le_mcode.h"
 
 #define _HALT	{ gs_PC --; error(1, 0, "Halted in %s:%07o at opcode %03o", modp->id.name, gs_PC, gs_IR); }
@@ -24,13 +27,13 @@
 //
 void le_transfer(bool chg, uint16_t to, uint16_t from)
 {
-	uint16_t j;
+	// uint16_t j;
 
-	j = dsh_mem[gs_S + to];
-	es_save_regs();
-	dsh_mem[gs_S + from] = gs_P;
-	gs_P = j;
-	es_restore_regs(chg);
+	// j = dsh_mem[gs_S + to];
+	// es_save_regs();
+	// dsh_mem[gs_S + from] = gs_P;
+	// gs_P = j;
+	// es_restore_regs(chg);
 }
 
 
@@ -38,7 +41,7 @@ void le_transfer(bool chg, uint16_t to, uint16_t from)
 // Main interpreter loop
 // Executes specified module and procedure
 //
-uint32_t le_execute(uint8_t modn, uint16_t procn)
+uint32_t le_execute(uint8_t modn)
 {
 	mod_entry_t *modp;	// Pointer to current module
 	uint8_t *code_p;	// Pointer to module code frame
@@ -80,12 +83,9 @@ uint32_t le_execute(uint8_t modn, uint16_t procn)
 	gs_S = data_top;
 	stk_mark(0, false);
 
-	// Setup registers and go
+	// Setup registers and call procedure 0 of module
 	set_module_ptr(modn);
-	gs_PC = modp->proc[procn];
-
-	// gs_P = stack[4];
-	// es_restore_regs(true);
+	gs_PC = modp->proc[0];
 
 	do {
 		// Check for code overrun
@@ -745,10 +745,61 @@ uint32_t le_execute(uint8_t modn, uint16_t procn)
 			break;
 		}
 
-		case 0246 :
+		case 0246 : {
 			// SVC  system hook (emulator only)
-			le_supervisor_call(modn, le_next());
+			uint8_t call = le_next();
+			if (call != 1)
+			{
+				// All calls except external module load
+				le_supervisor_call(modn, call);
+			}
+			else
+			{
+				// Load external module
+				uint16_t ln = es_pop() + 2;	// HIGH of filename parameter
+				uint16_t sz = ln >> 1;		// # of stack words for filename
+
+				// Copy filename to own buffer
+				char *fn = malloc(ln);
+				fs_swapcpy(fn, (char *) &(dsh_mem[gs_S - sz]), ln - 1); 
+
+				// Save the stack, since it will be overwritten by loaded module
+				// We need to save datatop...gs_S
+				uint16_t saved_gs_L = gs_L;
+				uint16_t saved_gs_PC = gs_PC;
+				uint16_t saved_data_top = data_top;
+				data_top = gs_S;
+
+				// Try to load the module
+				uint8_t top = le_load_initfile(fn, "SYS.");
+				if (top > 0)
+				{
+					// Execute module
+					le_execute(top);
+
+					uint8_t cur_top = mach_num_modules();
+					while (-- cur_top >= top)
+					{
+						// Release memory occupied by module and dependencies
+						data_top -= mach_unload_top();
+
+						// Release heap memory allocated by module
+						hp_free_all(cur_top);
+					}
+				}
+
+				// Restore the stack
+				gs_S = data_top;
+				data_top = saved_data_top;
+				gs_PC = saved_gs_PC;
+				gs_L = saved_gs_L;
+				free(fn);
+
+				// Push return result
+				es_push((top > 0) ? 1 : 0);
+			}
 			break;
+		}
 
 		case 0247 :
 			// SYS  rarely used system functions

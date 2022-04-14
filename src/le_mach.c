@@ -158,3 +158,21 @@ void mach_init()
     // Initialize and clear module table
     init_module_tab();
 }
+
+
+// mach_unload_top
+// Unloads the topmost currently loaded module
+// Returns former data segment size of freed module
+//
+uint16_t mach_unload_top()
+{
+    mod_entry_t *p = &(module_tab[module_num - 1]);
+
+	// Free code frame and procedure table
+	free(p->code);
+	free(p->proc);
+
+	// Decrement number of modules
+	module_num --;
+	return p->data_sz;
+}

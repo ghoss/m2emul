@@ -65,28 +65,9 @@ void le_supervisor_call(uint8_t mod, uint8_t n)
 			break;
 		}
 
-		case 1 : {
-			// External module/program call
-			uint16_t n = es_pop() + 2;	// HIGH of filename parameter
-			uint16_t sz = n >> 1;		// # of stack words for filename
-
-			// Copy filename to own buffer
-			char *fn = malloc(n);
-			fs_swapcpy(fn, (char *) &(dsh_mem[gs_S - sz]), n - 1); 
-				VERBOSE("External call n+2=%d, sz=%d '%s'\n", n, sz, fn)
-			uint8_t top = le_load_initfile(fn, "SYS.");
-			if (top > 0)
-			{
-				es_push(1);
-			}
-			else
-			{
-				// External call failed
-				es_push(0);
-			}
-			free(fn);
+		case 1 :
+			// External module/program call, handled in mcode.c
 			break;
-		}
 
 		default :
 			error(1, 0, "Supervisor call %d not implemented", n);
