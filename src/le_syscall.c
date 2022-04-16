@@ -9,6 +9,8 @@
 // Published by Guido Hoss under GNU Public License V3.
 //=====================================================
 
+#include <time.h>
+#include <byteswap.h>
 #include "le_mach.h"
 #include "le_stack.h"
 #include "le_heap.h"
@@ -58,16 +60,53 @@ void le_supervisor_call(uint8_t mod, uint8_t n)
 			uint16_t mode = es_pop();	// Alloc = 0, Dealloc = 1
 			uint16_t sz = es_pop();		// Allocation size
 			uint16_t vadr = es_pop();	// Address of pointer variable
-			if (mode == 0)
-				dsh_mem[vadr] = hp_alloc(mod, sz);
-			else
-				hp_free(dsh_mem[vadr]);
-			break;
+
+			switch (mode)
+			{
+				case 0 :
+					// Allocation
+					dsh_mem[vadr] = hp_alloc(mod, sz);
+					break;
+				
+				case 1 :
+					// Deallocation
+					hp_free(dsh_mem[vadr]);
+					break;
+
+				case 2 :
+					// Reset heap to limit
+					hp_free_all(mod, vadr);
+					break;
+
+				default :
+					error(1, 0, "Invalid allocation mode %d", mode);
+					break;
+			}
 		}
 
 		case 1 :
 			// External module/program call, handled in mcode.c
 			break;
+
+		case 2 : {
+			// Get system time and store it into a structure
+			// comprised of 3 cardinals "day", "min" and "msec"
+			
+			uint16_t vadr = es_pop();	// Address of target variable
+
+			time_t now = time(NULL);
+        	struct tm *t_now = localtime(&now);
+
+      		dsh_mem[vadr] = bswap_16((t_now->tm_mday + 1)
+                + ((t_now->tm_mon + 1) << 5)
+                + (t_now->tm_year << 9));
+
+       		dsh_mem[vadr + 1] = 
+			   	bswap_16((t_now->tm_hour * 60) + t_now->tm_min);
+
+			dsh_mem[vadr + 2] = 0;
+			break;
+		}
 
 		default :
 			error(1, 0, "Supervisor call %d not implemented", n);

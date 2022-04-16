@@ -147,7 +147,6 @@ uint32_t le_execute(uint8_t modn)
 
 		case 027 : {
 			// LEA  load external address
-			_HALT
 			uint16_t ext_mod = le_next();		// Module number
 			uint16_t ext_adr = le_next();		// Data word offset number
 			es_push(module_tab[ext_mod].data_ofs + ext_adr);
@@ -294,7 +293,6 @@ uint32_t le_execute(uint8_t modn)
 
 		case 062 : {
 			// SEW  store external word
-			_HALT
 			uint8_t ext_mod = le_next();		// Module number
 			uint8_t ext_adr = le_next();		// Data word offset
 			dsh_mem[module_tab[ext_mod].data_ofs + ext_adr] = es_pop();
@@ -784,7 +782,7 @@ uint32_t le_execute(uint8_t modn)
 						data_top -= mach_unload_top();
 
 						// Release heap memory allocated by module
-						hp_free_all(cur_top);
+						hp_free_all(cur_top, 0);
 					}
 				}
 

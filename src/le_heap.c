@@ -101,9 +101,9 @@ uint16_t hp_alloc(uint8_t mod, uint16_t sz)
 // hp_free_int()
 // Deallocate the heap memory previously allocated
 // to "ptr" if by_ptr=true, or allocated to "mod"
-// if by_ptr=false.
+// if by_ptr=false. Only check pointers above "limit".
 //
-void hp_free_int(uint8_t mod, uint16_t ptr, bool by_ptr)
+void hp_free_int(uint8_t mod, uint16_t ptr, uint16_t limit, bool by_ptr)
 {
 	hp_header_ptr cur = heap_top;
 	hp_header_ptr prev = NULL;
@@ -133,7 +133,7 @@ void hp_free_int(uint8_t mod, uint16_t ptr, bool by_ptr)
 	}
 
 	// Scan block list for address
-	while (cur != NULL)
+	while ((cur != NULL) && (cur->adr >= limit))
 	{
 		if (is_match(cur))
 		{
@@ -165,10 +165,7 @@ void hp_free_int(uint8_t mod, uint16_t ptr, bool by_ptr)
 
 	// At end of block list?
 	if ((cur == NULL) && by_ptr)
-	{
-		// Pointer not found
 		error(1, 0, "Heap pointer *%04X invalid", ptr);
-	}
 }
 
 
@@ -177,16 +174,17 @@ void hp_free_int(uint8_t mod, uint16_t ptr, bool by_ptr)
 //
 void hp_free(uint16_t ptr)
 {
-	hp_free_int(0, ptr, true);
+	hp_free_int(0, ptr, 0, true);
 }
 
 
 // hp_free_all()
 // Frees all blocks belonging to the specified module
+// above and including pointer address "limit"
 //
-void hp_free_all(uint8_t mod)
+void hp_free_all(uint8_t mod, uint16_t limit)
 {
-	hp_free_int(mod, 0, false);
+	hp_free_int(mod, 0, limit, false);
 }
 
 

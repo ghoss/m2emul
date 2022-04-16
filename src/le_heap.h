@@ -24,6 +24,6 @@ extern uint16_t gs_H;		// Heap limit address
 uint16_t hp_alloc(uint8_t mod, uint16_t sz);
 void hp_free(uint16_t ptr);
 void hp_init();
-void hp_free_all(uint8_t mod);
+void hp_free_all(uint8_t mod, uint16_t limit);
 
 #endif
