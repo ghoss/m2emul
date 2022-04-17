@@ -18,5 +18,6 @@
 // Function declarations
 //
 void fs_swapcpy(char *dest, char *src, uint16_t n);
+void fs_close_all(uint16_t owner);
 
 #endif

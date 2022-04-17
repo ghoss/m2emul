@@ -781,6 +781,9 @@ uint32_t le_execute(uint8_t modn)
 						// Release memory occupied by module and dependencies
 						data_top -= mach_unload_top();
 
+						// Close all files opened by module
+						fs_close_all(cur_top);
+						
 						// Release heap memory allocated by module
 						hp_free_all(cur_top, 0);
 					}
