@@ -88,19 +88,6 @@ void le_show_callchain(mod_entry_t *modp)
 }
 
 
-// le_trap()
-// Trap handler
-//
-void le_trap(mod_entry_t *modp, uint16_t n)
-{
-	le_show_callchain(modp);
-	error(1, 0, 
-		"TRAP #%d: %s\r\n%d:%07o (%s)", 
-		n, trap_descr[n], modp->id.idx, gs_PC - 1, modp->id.name
-	);
-}
-
-
 // le_code_length()
 // Returns the length of the current opcode
 //
@@ -433,4 +420,20 @@ void le_monitor(mod_entry_t *mod)
 	
 	timeout(0);
 	noecho();
+}
+
+
+// le_trap()
+// Trap handler
+//
+void le_trap(mod_entry_t *modp, uint16_t n)
+{
+	le_show_callchain(modp);
+	if (le_verbose)
+		le_show_registers(modp);
+		
+	error(1, 0, 
+		"TRAP #%d: %s\r\n%d:%07o (%s)", 
+		n, trap_descr[n], modp->id.idx, gs_PC - 1, modp->id.name
+	);
 }

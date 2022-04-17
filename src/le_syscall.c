@@ -108,7 +108,43 @@ void svc_time_func()
 //
 void svc_file_func()
 {
-	
+	uint16_t param = es_pop();	// Address of parameter block
+	uint16_t m2_fd = es_pop();	// Address of M2 file descriptor
+
+	// Mode 1: with filename parameter, mode 2: without
+	uint16_t mode = dsh_mem[param];
+	char *fn = NULL;
+
+	if (mode == 1)
+	{
+		uint16_t ln = es_pop() + 2;	// HIGH of filename parameter
+		uint16_t strp = es_pop();
+
+		// Copy filename to own buffer
+		fn = malloc(ln);
+		fs_swapcpy(fn, (char *) &(dsh_mem[strp]), ln - 1); 
+	}
+
+	// Process specified command
+	uint16_t cmd = dsh_mem[param + 3];
+	switch (cmd)
+	{
+		case 3 : {
+			// Lookup (create) file
+			bool new = (dsh_mem[param + 4] != 0);
+VERBOSE("Lookup %s mode %d\n", fn, new);
+			break;
+		}
+		
+		default :
+			error(1, 0, "Filesystem command %d not implemented", cmd);
+			break;
+	}
+	// VERBOSE("p0=%04X p1=%04X p2=%04X p3=%04X\n", dsh_mem[param], dsh_mem[param+1], dsh_mem[param+2], dsh_mem[param+3])
+
+	// Release memory for filename if some was assigned
+	if (mode == 1)
+		free(fn);
 }
 
 
