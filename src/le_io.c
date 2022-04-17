@@ -67,7 +67,17 @@ void le_iowrite(uint16_t chan, uint16_t w)
 void le_putchar(char c)
 {
 	attron(A_BOLD);
-	printw("%c", c);
+	switch (c)
+	{
+		case 0177 :
+			printw("\010");
+			delch();
+			break;
+
+		default :
+			printw("%c", c);
+			break;
+	}
 	attroff(A_BOLD);
 	refresh();
 }
