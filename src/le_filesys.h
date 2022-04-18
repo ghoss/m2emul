@@ -14,10 +14,18 @@
 
 #include "le_mach.h"
 
+enum fs_filemode_t {
+	FS_READ,
+	FS_WRITE,
+	FS_MODIFY
+};
+
 
 // Function declarations
 //
 void fs_swapcpy(char *dest, char *src, uint16_t n);
+bool fs_open(uint8_t modn, char *fn, bool create, uint16_t m2_fd);
+bool fs_reopen(uint16_t m2_fd, enum fs_filemode_t fmode);
 void fs_close_all(uint16_t owner);
 
 #endif

@@ -56,6 +56,17 @@ void fs_swapcpy(char *dest, char *src, uint16_t n)
 }
 
 
+// fs_cache_last()
+// Cache most recent referenced file descriptor for
+// faster access
+//
+void fs_cache_last(fs_index_ptr p)
+{
+	last_fd = p;
+	last_m2file = (p != NULL) ? p->m2file : 0;
+}
+
+
 // fs_find_fd()
 // Returns the associated file list entry for a
 // Modula-2 file descriptor
@@ -91,21 +102,72 @@ fs_index_ptr fs_find_fd(uint16_t m2_fd)
 
 
 // fs_open()
-// Open an existing file or create a new one.
+// Open an existing file or create a new one (create=TRUE).
 // If the filename is empty, a temporary file is created.
+// m2_fd points to the Modula-2 file descriptor of the caller.
 //
-bool fs_open(char *fn)
+bool fs_open(uint8_t modn, char *fn, bool create, uint16_t m2_fd)
 {
-	return false;
+	FILE *f;
+	bool temp = (*fn == '\0');
+
+	if (temp)
+	{
+		// Create temporary file
+		char template[16] = "mule_tmp.XXXXXX";
+		int fno = mkstemp(template);
+		f = fdopen(fno, "w");
+		create = true;
+	}
+	else
+	{
+		// Create regular file
+		f = fopen(fn, create ? "w" : "r");
+	}
+
+	// Try to open or create file
+	if (f != NULL)
+	{
+		// Successful; add entry to list of open files
+		fs_index_ptr p = malloc(sizeof(struct fs_index_t));
+		if (p == NULL)
+			error(1, errno, "fs_open malloc failed");
+		
+		p->fd = f;
+		p->m2file = m2_fd;
+		p->owner = modn;
+		p->temp = temp;
+		p->next = fd_list;
+		fd_list = p;
+		fs_cache_last(p);
+		return true;
+	}
+	else
+	{
+		// Could not open or create file
+		return false;
+	}
+}
+
+
+// fs_reopen()
+// Change file mode of previously opened file
+//
+bool fs_reopen(uint16_t m2_fd, enum fs_filemode_t fmode)
+{
+	fs_index_ptr p = fs_find_fd(m2_fd);
+
+	return (fdopen(fileno(p->fd), (fmode == FS_READ) ? "r" : "r+") == NULL);
 }
 
 
 // fs_close()
 // Closes an open file. If it was temporary, it is deleted.
 //
-bool fs_close(FILE *f)
+bool fs_close(fs_index_ptr p)
 {
-	// Reset last_ cache if it referenced this file
+
+	fs_cache_last(NULL);
 	return false;
 }
 

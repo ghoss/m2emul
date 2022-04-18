@@ -106,17 +106,19 @@ void svc_time_func()
 // svc_file_func()
 // Filesystem functions
 //
-void svc_file_func()
+void svc_file_func(uint8_t modn)
 {
-	uint16_t param = es_pop();	// Address of parameter block
+	uint16_t param = es_pop();	// Address of M2 "SYSParam" record
 	uint16_t m2_fd = es_pop();	// Address of M2 file descriptor
 
 	// Mode 1: with filename parameter, mode 2: without
 	uint16_t mode = dsh_mem[param];
 	char *fn = NULL;
+	bool res = false;
 
 	if (mode == 1)
 	{
+		// Directory commands include a filename parameter
 		uint16_t ln = es_pop() + 2;	// HIGH of filename parameter
 		uint16_t strp = es_pop();
 
@@ -125,25 +127,45 @@ void svc_file_func()
 		fs_swapcpy(fn, (char *) &(dsh_mem[strp]), ln - 1); 
 	}
 
-	// Process specified command
+	// Process command in M2 "SYSParam.com" record variable
 	uint16_t cmd = dsh_mem[param + 3];
 	switch (cmd)
 	{
-		case 3 : {
-			// Lookup (create) file
-			bool new = (dsh_mem[param + 4] != 0);
-VERBOSE("Lookup %s mode %d\n", fn, new);
+		case 3 :
+			// Lookup (create) file (flag in SYSParam.new)
+			bool create = (dsh_mem[param + 4] != 0);
+			res = fs_open(modn, fn, create, m2_fd);
 			break;
-		}
+
+		case 5 :
+			// Set read mode
+			res = fs_reopen(m2_fd, FS_READ);
+			break; 
+
+		case 6 :
+			// Set write mode
+			res = fs_reopen(m2_fd, FS_WRITE);
+			break;
+
+		case 7 :
+			// Set modify mode
+			res = fs_reopen(m2_fd, FS_MODIFY);
+			break;
+
+		case 9 :
+			// Do I/O
+			break;
 		
 		default :
 			error(1, 0, "Filesystem command %d not implemented", cmd);
 			break;
 	}
-	// VERBOSE("p0=%04X p1=%04X p2=%04X p3=%04X\n", dsh_mem[param], dsh_mem[param+1], dsh_mem[param+2], dsh_mem[param+3])
+
+	// Handle error (SYSParam.res = done or notdone)
+	dsh_mem[param + 1] = res ? 0 : 1;
 
 	// Release memory for filename if some was assigned
-	if (mode == 1)
+	if (fn != NULL)
 		free(fn);
 }
 
@@ -152,12 +174,12 @@ VERBOSE("Lookup %s mode %d\n", fn, new);
 // Implements the (informal) SVC opcode
 // (NOT part of the original M-Code specification)
 //
-void le_supervisor_call(uint8_t mod, uint8_t n)
+void le_supervisor_call(uint8_t modn, uint8_t n)
 {
 	switch (n)
 	{
 		case 0 :
-			svc_heap_func(mod);
+			svc_heap_func(modn);
 			break;
 
 		case 1 :
@@ -171,7 +193,7 @@ void le_supervisor_call(uint8_t mod, uint8_t n)
 
 		case 3 :
 			// Filesystem functions
-			svc_file_func();
+			svc_file_func(modn);
 			break;
 
 		default :
