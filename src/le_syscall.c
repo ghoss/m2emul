@@ -108,65 +108,126 @@ void svc_time_func()
 //
 void svc_file_func(uint8_t modn)
 {
-	uint16_t param = es_pop();	// Address of M2 "SYSParam" record
-	uint16_t m2_fd = es_pop();	// Address of M2 file descriptor
-
-	// Mode 1: with filename parameter, mode 2: without
-	uint16_t mode = dsh_mem[param];
-	char *fn = NULL;
-	bool res = false;
-
-	if (mode == 1)
+	char *get_filename()
 	{
-		// Directory commands include a filename parameter
 		uint16_t ln = es_pop() + 2;	// HIGH of filename parameter
 		uint16_t strp = es_pop();
 
 		// Copy filename to own buffer
-		fn = malloc(ln);
+		char *fn = malloc(ln);
 		fs_swapcpy(fn, (char *) &(dsh_mem[strp]), ln - 1); 
+		return fn;
 	}
 
-	// Process command in M2 "SYSParam.com" record variable
-	uint16_t cmd = dsh_mem[param + 3];
+	uint16_t cmd = es_pop();
+	uint16_t m2_fd = es_pop();	// Address of M2 file descriptor
+	bool res = false;
+
+	// Dispatch command
 	switch (cmd)
 	{
-		case 3 :
-			// Lookup (create) file (flag in SYSParam.new)
-			bool create = (dsh_mem[param + 4] != 0);
-			res = fs_open(modn, fn, create, m2_fd);
+		case 0 : {
+			// Create(VAR f: File; mediumname: ARRAY OF CHAR)
+			char *fn = get_filename();
+			free(fn);
+			break;
+		}
+
+		case 1 :
+			// Close(VAR f: File)
+			break;
+
+		case 2 : {
+			// Lookup(VAR f: File; filename: ARRAY OF CHAR; new: BOOLEAN)
+			char *fn = get_filename();
+			bool new = dsh_mem[es_pop()];
+			free(fn);
+			break;
+		}
+
+		case 3 : {
+			// Rename(VAR f: File; filename: ARRAY OF CHAR)
+			char *fn = get_filename();
+			free(fn);
+			break;
+		}
+
+		case 4 :
+			// SetRead(VAR f: File)
 			break;
 
 		case 5 :
-			// Set read mode
-			res = fs_reopen(m2_fd, FS_READ);
+			// SetWrite(VAR f: File)
 			break; 
 
 		case 6 :
-			// Set write mode
-			res = fs_reopen(m2_fd, FS_WRITE);
+			// SetModify(VAR f: File)
 			break;
 
 		case 7 :
-			// Set modify mode
-			res = fs_reopen(m2_fd, FS_MODIFY);
+			// SetOpen(VAR f: File)
 			break;
 
-		case 9 :
-			// Do I/O
+		case 8 : {
+			// SetPos(VAR f: File; highpos, lowpos: CARDINAL)
+			uint16_t lo = dsh_mem[es_pop()];
+			uint16_t hi = dsh_mem[es_pop()];
 			break;
-		
+		}
+
+		case 9 : {
+			// GetPos(VAR f: File; VAR highpos, lowpos: CARDINAL)
+			uint16_t lo = dsh_mem[es_pop()];
+			uint16_t hi = dsh_mem[es_pop()];
+			break;
+		}
+
+		case 10 : {
+			// Length(VAR f: File; VAR highpos, lowpos: CARDINAL)
+			uint16_t lo = dsh_mem[es_pop()];
+			uint16_t hi = dsh_mem[es_pop()];
+			break;
+		}
+
+		case 11 :
+			// Reset(VAR f: File)
+			break;
+
+		case 12 :
+			// Again(VAR f: File)
+			break;
+
+		case 13 : {
+			// ReadWord(VAR f: File; VAR w: WORD)
+			uint16_t w = es_pop();
+			break;
+		}
+
+		case 14 : {
+			// WriteWord(VAR f: File; w: WORD)
+			uint16_t w = dsh_mem[es_pop()];
+			break;
+		}
+
+		case 15 : {
+			// ReadChar(VAR f: File; VAR ch: CHAR)
+			uint16_t w = es_pop();
+			break;
+		}
+
+		case 16 : {
+			// WriteChar(VAR f: File; ch: CHAR)
+			uint16_t w = dsh_mem[es_pop()];
+			break;
+		}
+
 		default :
 			error(1, 0, "Filesystem command %d not implemented", cmd);
 			break;
 	}
 
-	// Handle error (SYSParam.res = done or notdone)
-	dsh_mem[param + 1] = res ? 0 : 1;
-
-	// Release memory for filename if some was assigned
-	if (fn != NULL)
-		free(fn);
+	// Handle error
+	es_push(res ? 0 : 1);
 }
 
 
