@@ -108,15 +108,16 @@ void svc_time_func()
 //
 void svc_file_func(uint8_t modn)
 {
-	char *get_filename()
+	char *get_filename(char **fn)
 	{
 		uint16_t ln = es_pop() + 2;	// HIGH of filename parameter
 		uint16_t strp = es_pop();
 
 		// Copy filename to own buffer
-		char *fn = malloc(ln);
-		fs_swapcpy(fn, (char *) &(dsh_mem[strp]), ln - 1); 
-		return fn;
+		char *p = malloc(ln);
+		fs_swapcpy(p, (char *) &(dsh_mem[strp]), ln - 1);
+		*fn = (strncmp(p, "DK.", 3) == 0) ? (p + 3) : p;
+		return p;
 	}
 
 	uint16_t cmd = es_pop();
@@ -128,8 +129,11 @@ void svc_file_func(uint8_t modn)
 	{
 		case 0 : {
 			// Create(VAR f: File; mediumname: ARRAY OF CHAR)
-			char *fn = get_filename();
-			free(fn);
+			char *fn;
+			char *p = get_filename(&fn);
+			res = fs_open(modn, "", true, m2_fd);
+			VERBOSE("create %s\n", fn);
+			free(p);
 			break;
 		}
 
@@ -139,88 +143,108 @@ void svc_file_func(uint8_t modn)
 
 		case 2 : {
 			// Lookup(VAR f: File; filename: ARRAY OF CHAR; new: BOOLEAN)
-			char *fn = get_filename();
-			bool new = dsh_mem[es_pop()];
-			free(fn);
+			char *fn;
+			char *p = get_filename(&fn);
+			bool create = dsh_mem[es_pop()];
+			res = fs_open(modn, fn, create, m2_fd);
+			VERBOSE("lookup %s, new=%d\n", fn, create);
+			free(p);
 			break;
 		}
 
 		case 3 : {
 			// Rename(VAR f: File; filename: ARRAY OF CHAR)
-			char *fn = get_filename();
-			free(fn);
+			char *fn;
+			char *p = get_filename(&fn);
+			VERBOSE("rename %s\n", fn);
+			free(p);
 			break;
 		}
 
 		case 4 :
 			// SetRead(VAR f: File)
+			fs_reopen(m2_fd, FS_READ);
+			VERBOSE("setread\n");
 			break;
 
 		case 5 :
 			// SetWrite(VAR f: File)
+			fs_reopen(m2_fd, FS_WRITE);
+			VERBOSE("setwrite\n");
 			break; 
 
 		case 6 :
 			// SetModify(VAR f: File)
-			break;
-
-		case 7 :
-			// SetOpen(VAR f: File)
+			fs_reopen(m2_fd, FS_MODIFY);
+			VERBOSE("setmodify\n");
 			break;
 
 		case 8 : {
 			// SetPos(VAR f: File; highpos, lowpos: CARDINAL)
-			uint16_t lo = dsh_mem[es_pop()];
-			uint16_t hi = dsh_mem[es_pop()];
+			uint32_t pos = dsh_mem[es_pop()];
+			pos |= dsh_mem[es_pop()] << 16;
+			VERBOSE("setpos l=%u\n", pos);
 			break;
 		}
 
 		case 9 : {
 			// GetPos(VAR f: File; VAR highpos, lowpos: CARDINAL)
-			uint16_t lo = dsh_mem[es_pop()];
-			uint16_t hi = dsh_mem[es_pop()];
+			uint32_t pos = 0;
+			dsh_mem[es_pop()] = pos & 0xffff;
+			dsh_mem[es_pop()] = pos >> 16;
+			VERBOSE("getpos l=%u\n", pos);
 			break;
 		}
 
 		case 10 : {
 			// Length(VAR f: File; VAR highpos, lowpos: CARDINAL)
-			uint16_t lo = dsh_mem[es_pop()];
-			uint16_t hi = dsh_mem[es_pop()];
+			uint32_t pos = 0;
+			dsh_mem[es_pop()] = pos & 0xffff;
+			dsh_mem[es_pop()] = pos >> 16;
+			VERBOSE("length l=%u\n", pos);
 			break;
 		}
 
 		case 11 :
 			// Reset(VAR f: File)
+			VERBOSE("reset\n")
 			break;
 
 		case 12 :
 			// Again(VAR f: File)
+			VERBOSE("again\n")
 			break;
 
 		case 13 : {
 			// ReadWord(VAR f: File; VAR w: WORD)
 			uint16_t w = es_pop();
+			VERBOSE("readword\n")
 			break;
 		}
 
 		case 14 : {
 			// WriteWord(VAR f: File; w: WORD)
 			uint16_t w = dsh_mem[es_pop()];
+			VERBOSE("writeword %d\n", w)
 			break;
 		}
 
 		case 15 : {
 			// ReadChar(VAR f: File; VAR ch: CHAR)
 			uint16_t w = es_pop();
+			VERBOSE("readchar\n")
 			break;
 		}
 
 		case 16 : {
 			// WriteChar(VAR f: File; ch: CHAR)
 			uint16_t w = dsh_mem[es_pop()];
+			VERBOSE("writechar %c\n", w & 0xff)
 			break;
 		}
 
+		case 7 :
+			// SetOpen(VAR f: File)
 		default :
 			error(1, 0, "Filesystem command %d not implemented", cmd);
 			break;

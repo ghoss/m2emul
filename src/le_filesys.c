@@ -194,15 +194,6 @@ void fs_close_all(uint16_t owner)
 }
 
 
-// fs_setmode()
-// Resets the mode of the existing file f to "mode"
-//
-bool fs_setmode(FILE *f, char *mode)
-{
-	return false;
-}
-
-
 // fs_rename()
 // Renames the open file f to a new name
 // If the name is empty, f is converted to a temporary file.
