@@ -166,7 +166,6 @@ bool fs_reopen(uint16_t m2_fd, enum fs_filemode_t fmode)
 //
 bool fs_close(fs_index_ptr p)
 {
-
 	fs_cache_last(NULL);
 	return false;
 }

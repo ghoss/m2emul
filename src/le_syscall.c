@@ -71,7 +71,7 @@ void svc_heap_func(uint8_t mod)
 
 		case 2 :
 			// Reset heap to limit
-			hp_free_all(mod, vadr);
+			hp_free_all(mod, dsh_mem[vadr]);
 			break;
 
 		default :
@@ -147,7 +147,7 @@ void svc_file_func(uint8_t modn)
 			char *p = get_filename(&fn);
 			bool create = dsh_mem[es_pop()];
 			res = fs_open(modn, fn, create, m2_fd);
-			VERBOSE("lookup %s, new=%d\n", fn, create);
+			VERBOSE("lookup %s, new=%d, fd=%d\n", fn, create, m2_fd);
 			free(p);
 			break;
 		}
@@ -217,8 +217,9 @@ void svc_file_func(uint8_t modn)
 
 		case 13 : {
 			// ReadWord(VAR f: File; VAR w: WORD)
-			uint16_t w = es_pop();
+			dsh_mem[es_pop()] = 0;
 			VERBOSE("readword\n")
+			res = true;
 			break;
 		}
 
@@ -226,20 +227,24 @@ void svc_file_func(uint8_t modn)
 			// WriteWord(VAR f: File; w: WORD)
 			uint16_t w = dsh_mem[es_pop()];
 			VERBOSE("writeword %d\n", w)
+			res = true;
 			break;
 		}
 
 		case 15 : {
 			// ReadChar(VAR f: File; VAR ch: CHAR)
-			uint16_t w = es_pop();
+			dsh_mem[es_pop()] = 0;
 			VERBOSE("readchar\n")
+			res = true;
 			break;
 		}
 
 		case 16 : {
 			// WriteChar(VAR f: File; ch: CHAR)
-			uint16_t w = dsh_mem[es_pop()];
-			VERBOSE("writechar %c\n", w & 0xff)
+			uint16_t adr=es_pop();
+			uint16_t w = dsh_mem[adr];
+			VERBOSE("writechar adr %d > fd %d, %d\n", adr, m2_fd, w)
+			res = true;
 			break;
 		}
 

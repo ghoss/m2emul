@@ -1469,6 +1469,7 @@ uint32_t le_execute(uint8_t modn)
 				stk_mark(modn, true);
 				set_module_ptr(call_mod);
 				gs_PC = modp->proc[call_proc];
+				// VERBOSE("CLX %s.%d\n", modp->id.name, call_proc)
 			}
 			break;
 		}

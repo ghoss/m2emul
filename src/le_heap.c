@@ -48,6 +48,10 @@ uint16_t hp_alloc(uint8_t mod, uint16_t sz)
 	hp_header_ptr cur = heap_top;
 	hp_header_ptr prev = NULL;
 
+	// Allocate non-zero size
+	if (sz == 0)
+		sz = 1;
+
 	// Scan block list for suitable gaps
 	while (cur != NULL)
 	{
@@ -114,22 +118,19 @@ void hp_free_int(uint8_t mod, uint16_t ptr, uint16_t limit, bool by_ptr)
 		p->adr = q->adr;
 		p->next = q->next;
 		free(q);
-
-		// Increase heap top if lowest block freed
-		if (p->next == NULL)
-			gs_H = p->adr;
 	}
 
 	bool is_match(hp_header_ptr p)
 	{
-		return ((by_ptr && (p->adr == ptr)) ||
-			((! by_ptr) && (p->owner == mod)));
+		return (p != heap_top) &&
+			(((by_ptr && (p->adr == ptr)) ||
+			((! by_ptr) && (p->owner == mod))));
 	}
 
 	bool is_free(hp_header_ptr p)
 	{
-		return ((by_ptr && (p->owner == 0)) ||
-			((! by_ptr) && (p->owner = mod)));
+		return (p != heap_top) && ((p->owner == 0) || 
+			((! by_ptr) && ((p->owner == mod))));
 	}
 
 	// Scan block list for address
@@ -143,20 +144,34 @@ void hp_free_int(uint8_t mod, uint16_t ptr, uint16_t limit, bool by_ptr)
 				// Valid pointer, proceed to release
 				cur->owner = 0;
 
-				// Consolidate with next block
-				if ((cur->next != NULL) && is_free(cur->next))
-					consolidate(cur, cur->next);
-
 				// Consolidate with previous block
 				if ((prev != NULL) && is_free(prev))
 				{
 					consolidate(prev, cur);
-					prev->owner = 0;
+					cur = prev;
+				}
+				
+				// Consolidate with next block
+				if ((cur->next != NULL) && is_free(cur->next))
+					consolidate(cur, cur->next);
+
+				if (cur->next == NULL)
+				{
+					// Last block above heap_top
+					hp_header_ptr p = heap_top;
+					while (p->next != cur)
+						p = p->next;
+					gs_H = p->adr;
+					p->next = NULL;
+					free(cur);
+					return;
 				}
 
 				// Return after one deallocation if pointer mode
 				if (by_ptr)
 					return;
+				else
+					continue;
 			}
 		}
 		prev = cur;
