@@ -27,5 +27,9 @@ void fs_swapcpy(char *dest, char *src, uint16_t n);
 bool fs_open(uint8_t modn, char *fn, bool create, uint16_t m2_fd);
 bool fs_reopen(uint16_t m2_fd, enum fs_filemode_t fmode);
 void fs_close_all(uint16_t owner);
+bool fs_close(uint16_t m2_fd);
+bool fs_write(uint16_t m2_fd, uint16_t w, bool is_char);
+bool fs_read(uint16_t m2_fd, uint16_t *w, bool is_char);
+bool fs_getpos(uint16_t m2_fd, uint32_t *pos);
 
 #endif

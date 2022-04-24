@@ -81,7 +81,7 @@ uint32_t le_execute(uint8_t modn)
 	gs_PC = gs_L = 0;
 	gs_M = 0;
 	gs_S = data_top;
-	stk_mark(0, false);
+	stk_mark(CALL_LOCAL, 0);
 
 	// Setup registers and call procedure 0 of module
 	set_module_ptr(modn);
@@ -765,6 +765,7 @@ uint32_t le_execute(uint8_t modn)
 				// We need to save datatop...gs_S
 				uint16_t saved_gs_L = gs_L;
 				uint16_t saved_gs_PC = gs_PC;
+				uint16_t saved_gs_SP = gs_SP;
 				uint16_t saved_data_top = data_top;
 				data_top = gs_S;
 
@@ -792,6 +793,7 @@ uint32_t le_execute(uint8_t modn)
 				// Restore the stack
 				gs_S = data_top;
 				data_top = saved_data_top;
+				gs_SP = saved_gs_SP;
 				gs_PC = saved_gs_PC;
 				gs_L = saved_gs_L;
 				free(fn);
@@ -878,7 +880,7 @@ uint32_t le_execute(uint8_t modn)
 			break;
 		}
 
-		case 0261 :
+		case 0261 : {
 			// LODFD  reload stack after function return
 			uint16_t i = es_pop();
 			uint16_t j = es_pop();
@@ -886,6 +888,7 @@ uint32_t le_execute(uint8_t modn)
 			es_push(j);
 			es_push(i);
 			break;
+		}
 
 		case 0262 :
 			// STORE
@@ -1403,7 +1406,6 @@ uint32_t le_execute(uint8_t modn)
 
 		case 0350 : {
 			// GB  get base adr n levels down
-			_HALT
 			uint16_t i = gs_L;
 			uint8_t j = le_next();
 			do {
@@ -1453,7 +1455,7 @@ uint32_t le_execute(uint8_t modn)
 			gs_PC = dsh_mem[gs_S + 2];
 
 			uint16_t call_mod = dsh_mem[gs_S];
-			if (call_mod & 0xff00)
+			if (call_mod != 0)
 				// Was an external call
 				set_module_ptr((uint8_t) call_mod);
 			break;
@@ -1466,7 +1468,7 @@ uint32_t le_execute(uint8_t modn)
 			if ((call_mod != 0) || (call_proc != 0))
 			{
 				// Ignore calls to System.0
-				stk_mark(modn, true);
+				stk_mark(CALL_EXT, modn);
 				set_module_ptr(call_mod);
 				gs_PC = modp->proc[call_proc];
 				// VERBOSE("CLX %s.%d\n", modp->id.name, call_proc)
@@ -1476,11 +1478,11 @@ uint32_t le_execute(uint8_t modn)
 
 		case 0356 : {
 			// CLI  call procedure at intermediate level
-			_HALT
 			uint8_t i = le_next();
-			stk_mark(es_pop(), false);
-			gs_PC = i << 1;
-			gs_PC = le_next2();
+			uint16_t base = es_pop();
+VERBOSE("CLI proc=%03o base=x%X\n", i, base - data_top)
+			stk_mark(CALL_LEVEL, base);
+			gs_PC = modp->proc[i];
 			break;
 		}
 
@@ -1489,7 +1491,7 @@ uint32_t le_execute(uint8_t modn)
 			uint16_t i = dsh_mem[gs_S - 1];
 			uint16_t call_mod = i >> 8;
 			uint16_t call_proc = i & 0xff;
-			stk_mark(modn, true);
+			stk_mark(CALL_FORMAL, modn);
 			set_module_ptr(call_mod);
 			gs_PC = modp->proc[call_proc];
 			break;
@@ -1498,14 +1500,14 @@ uint32_t le_execute(uint8_t modn)
 		case 0360 : {
 			// CLL  call local procedure
 			uint8_t i = le_next();
-			stk_mark(0, false);
+			stk_mark(CALL_LOCAL, 0);
 			gs_PC = modp->proc[i];
 			break;
 		}
 
 		case 0361 ... 0377 :
 			// CLL1 - CLL15  call local procedure
-			stk_mark(0, false);
+			stk_mark(CALL_LOCAL, 0);
 			gs_PC = modp->proc[gs_IR & 0xf];
 			break;
 

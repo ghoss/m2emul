@@ -71,7 +71,7 @@ void fs_cache_last(fs_index_ptr p)
 // Returns the associated file list entry for a
 // Modula-2 file descriptor
 //
-fs_index_ptr fs_find_fd(uint16_t m2_fd)
+fs_index_ptr fs_find_fd(uint16_t m2_fd, bool fatal_err)
 {
 	if (m2_fd == last_m2file)
 	{
@@ -87,15 +87,17 @@ fs_index_ptr fs_find_fd(uint16_t m2_fd)
 		{
 			if (cur->m2file == m2_fd)
 			{
-				last_m2file = m2_fd;
-				last_fd = cur;
+				fs_cache_last(cur);
 				return cur;
 			}
 			else {
 				cur = cur->next;
 			}
 		}
-		error(1, 0, "Invalid M2 file descriptor");
+
+		if (fatal_err)
+			error(1, 0, "Invalid M2 file descriptor");
+		
 		return NULL;
 	}
 }
@@ -155,7 +157,7 @@ bool fs_open(uint8_t modn, char *fn, bool create, uint16_t m2_fd)
 //
 bool fs_reopen(uint16_t m2_fd, enum fs_filemode_t fmode)
 {
-	fs_index_ptr p = fs_find_fd(m2_fd);
+	fs_index_ptr p = fs_find_fd(m2_fd, true);
 
 	return (fdopen(fileno(p->fd), (fmode == FS_READ) ? "r" : "r+") == NULL);
 }
@@ -164,10 +166,39 @@ bool fs_reopen(uint16_t m2_fd, enum fs_filemode_t fmode)
 // fs_close()
 // Closes an open file. If it was temporary, it is deleted.
 //
-bool fs_close(fs_index_ptr p)
+bool fs_close(uint16_t m2_fd)
 {
+	fs_index_ptr p = fs_find_fd(m2_fd, false);
+	if (p == NULL)
+		return false;
+
+	// Physically close file
+	fclose(p->fd);
+
+	// Remove file entry from index list
+	fs_index_ptr cur = fd_list;
+	fs_index_ptr prev = NULL;
+	while (cur != NULL)
+	{
+		if (cur == p)
+		{
+			if (prev != NULL)
+				prev->next = cur->next;
+			else
+				fd_list = cur->next;
+
+			free(cur);
+			break;
+		}
+		else
+		{
+			prev = cur;
+			cur = cur->next;
+		}
+	}
+
 	fs_cache_last(NULL);
-	return false;
+	return true;
 }
 
 
@@ -177,19 +208,33 @@ bool fs_close(fs_index_ptr p)
 void fs_close_all(uint16_t owner)
 {
 	fs_index_ptr cur = fd_list;
+	fs_index_ptr prev = NULL;
 
 	while (cur != NULL)
 	{
 		if (cur->owner == owner)
 		{
-			fs_close(cur);
-			cur = fd_list;
+			fs_index_ptr p = cur;
+			fclose(cur->fd);
+
+			if (prev != NULL)
+			{
+				prev->next = cur->next;
+				cur = prev;
+			}
+			else
+			{
+				fd_list = cur->next;
+				cur = fd_list;
+			}
+
+			free(p);
 		}
-		else
-		{
-			cur = cur->next;
-		}
+		prev = cur;
+		cur = cur->next;
 	}
+
+	fs_cache_last(NULL);
 }
 
 
@@ -200,4 +245,44 @@ void fs_close_all(uint16_t owner)
 bool fs_rename()
 {
 	return false;
+}
+
+
+// fs_write()
+// Writes a character (is_char=false) or word to the specified file
+// If (is_char=true), the word is already assumed to have been swapped
+// by the caller.
+//
+bool fs_write(uint16_t m2_fd, uint16_t w, bool is_char)
+{
+	uint8_t n = is_char ? 1 : 2;
+	fs_index_ptr p = fs_find_fd(m2_fd, true);
+
+	return (fwrite(&w, 1, n, p->fd) == n);
+}
+
+
+// fs_read()
+// Reads a character (is_char=false) or word from the specified file
+//
+bool fs_read(uint16_t m2_fd, uint16_t *w, bool is_char)
+{
+	uint8_t n = is_char ? 1 : 2;
+	fs_index_ptr p = fs_find_fd(m2_fd, true);
+
+	return (fread(w, 1, n, p->fd) == n);
+}
+
+
+// fs_getpos()
+// Gets the current file position
+//
+bool fs_getpos(uint16_t m2_fd, uint32_t *pos)
+{
+	long x;
+	fs_index_ptr p = fs_find_fd(m2_fd, true);
+
+	bool res = ((x = ftell(p->fd)) != -1);
+	*pos = res ? x : 0;
+	return res;
 }

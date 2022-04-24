@@ -257,9 +257,9 @@ void le_decode(mod_entry_t *mod, uint16_t pc)
 //
 void le_show_registers(mod_entry_t *mod)
 {
-	OUT("%s: S=x%04X, G=x%04X, L=x%04X, H=%04X, ES=x%02X", 
+	OUT("%s: S=x%04X, G=x%04X, L=x%04X(%04X), H=%04X, ES=x%02X", 
 		mod->id.name, gs_S - data_top,
-		gs_G, gs_L - data_top, gs_H, gs_SP
+		gs_G, gs_L - data_top, gs_L, gs_H, gs_SP
 	)
 
 	// Display stack

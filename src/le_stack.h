@@ -35,6 +35,14 @@ typedef struct {
     };
 } floatword_t;
 
+// Call type for stk_mark()
+enum es_calltype_t {
+	CALL_EXT,
+	CALL_FORMAL,
+	CALL_LOCAL,
+	CALL_LEVEL
+};
+
 // Function declarations
 //
 void es_init();
@@ -45,6 +53,6 @@ void es_dpush(floatword_t d);
 floatword_t es_dpop();
 void es_save();
 void es_restore();
-void stk_mark(uint16_t x, bool ext);
+void stk_mark(enum es_calltype_t ct, uint16_t arg);
 
 #endif

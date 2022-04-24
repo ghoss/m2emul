@@ -120,18 +120,18 @@ void es_restore()
 
 // stk_mark()
 // 
-void stk_mark(uint16_t x, bool ext)
+void stk_mark(enum es_calltype_t ct, uint16_t arg)
 {
-    uint16_t i = gs_S;
+    uint16_t old_S = gs_S;
 
-	// S + 0 = previous module number + high bit set or zero for local call
-	dsh_mem[i] = ext ? (x | 0xff00) : x;
+	// S + 0 = previous module number or (gs_L+0xff) for local call
+	dsh_mem[old_S] = ((ct == CALL_EXT) || (ct == CALL_FORMAL)) ? arg : 0;
 
 	// S + 1 = previous local proc. data ptr
 	// S + 2 = previous PC
-	dsh_mem[i + 1] = gs_L;
-    dsh_mem[i + 2] = gs_PC;
+	dsh_mem[old_S + 1] = (ct == CALL_LEVEL) ? arg : gs_L;
+    dsh_mem[old_S + 2] = gs_PC;
 
     gs_S += 4;
-    gs_L = i;
+	gs_L = old_S;
 }

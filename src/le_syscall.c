@@ -139,6 +139,7 @@ void svc_file_func(uint8_t modn)
 
 		case 1 :
 			// Close(VAR f: File)
+			res = fs_close(m2_fd);
 			break;
 
 		case 2 : {
@@ -147,7 +148,6 @@ void svc_file_func(uint8_t modn)
 			char *p = get_filename(&fn);
 			bool create = dsh_mem[es_pop()];
 			res = fs_open(modn, fn, create, m2_fd);
-			VERBOSE("lookup %s, new=%d, fd=%d\n", fn, create, m2_fd);
 			free(p);
 			break;
 		}
@@ -189,7 +189,8 @@ void svc_file_func(uint8_t modn)
 
 		case 9 : {
 			// GetPos(VAR f: File; VAR highpos, lowpos: CARDINAL)
-			uint32_t pos = 0;
+			uint32_t pos = 0;			
+			res = fs_getpos(m2_fd, &pos);
 			dsh_mem[es_pop()] = pos & 0xffff;
 			dsh_mem[es_pop()] = pos >> 16;
 			VERBOSE("getpos l=%u\n", pos);
@@ -216,35 +217,31 @@ void svc_file_func(uint8_t modn)
 			break;
 
 		case 13 : {
-			// ReadWord(VAR f: File; VAR w: WORD)
-			dsh_mem[es_pop()] = 0;
+			uint16_t w;
+			res = fs_read(m2_fd, &w, false);
+			dsh_mem[es_pop()] = res ? w : 0;
 			VERBOSE("readword\n")
-			res = true;
 			break;
 		}
 
 		case 14 : {
 			// WriteWord(VAR f: File; w: WORD)
-			uint16_t w = dsh_mem[es_pop()];
-			VERBOSE("writeword %d\n", w)
-			res = true;
+			res = fs_write(m2_fd, bswap_16(dsh_mem[es_pop()]), false);
 			break;
 		}
 
 		case 15 : {
 			// ReadChar(VAR f: File; VAR ch: CHAR)
-			dsh_mem[es_pop()] = 0;
-			VERBOSE("readchar\n")
-			res = true;
+			uint16_t ch;
+			res = fs_read(m2_fd, &ch, true);
+			dsh_mem[es_pop()] = res ? (ch & 0xff) : 0;
+			VERBOSE("readchar %c (%d) %d\n", ch, ch, res)
 			break;
 		}
 
 		case 16 : {
 			// WriteChar(VAR f: File; ch: CHAR)
-			uint16_t adr=es_pop();
-			uint16_t w = dsh_mem[adr];
-			VERBOSE("writechar adr %d > fd %d, %d\n", adr, m2_fd, w)
-			res = true;
+			res = fs_write(m2_fd, dsh_mem[es_pop()], true);
 			break;
 		}
 
