@@ -156,7 +156,7 @@ void svc_file_func(uint8_t modn)
 			// Rename(VAR f: File; filename: ARRAY OF CHAR)
 			char *fn;
 			char *p = get_filename(&fn);
-			VERBOSE("rename m2fd=%d, '%s'\n", m2_fd, fn);
+			res = fs_rename(m2_fd, fn);
 			free(p);
 			break;
 		}
@@ -183,7 +183,7 @@ void svc_file_func(uint8_t modn)
 			// SetPos(VAR f: File; highpos, lowpos: CARDINAL)
 			uint32_t pos = dsh_mem[es_pop()];
 			pos |= dsh_mem[es_pop()] << 16;
-			VERBOSE("setpos l=%u\n", pos);
+			res = fs_setpos(m2_fd, pos);
 			break;
 		}
 
@@ -193,7 +193,6 @@ void svc_file_func(uint8_t modn)
 			res = fs_getpos(m2_fd, &pos);
 			dsh_mem[es_pop()] = pos & 0xffff;
 			dsh_mem[es_pop()] = pos >> 16;
-			VERBOSE("getpos l=%u\n", pos);
 			break;
 		}
 
@@ -235,7 +234,6 @@ void svc_file_func(uint8_t modn)
 			uint16_t ch;
 			res = fs_read(m2_fd, &ch, true);
 			dsh_mem[es_pop()] = res ? (ch & 0xff) : 0;
-			VERBOSE("readchar %c (%d) %d\n", ch, ch, res)
 			break;
 		}
 

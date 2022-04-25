@@ -1491,7 +1491,6 @@ uint32_t le_execute(uint8_t modn)
 			// CLI  call procedure at intermediate level
 			uint8_t i = le_next();
 			uint16_t base = es_pop();
-VERBOSE("CLI proc=%03o base=x%X\n", i, base - data_top)
 			stk_mark(CALL_LEVEL, base);
 			gs_PC = modp->proc[i];
 			break;

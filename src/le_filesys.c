@@ -242,9 +242,20 @@ void fs_close_all(uint16_t owner)
 // Renames the open file f to a new name
 // If the name is empty, f is converted to a temporary file.
 //
-bool fs_rename()
+bool fs_rename(uint16_t m2_fd, char *fn)
 {
-	return false;
+	// fs_index_ptr p = fs_find_fd(m2_fd, true);
+
+	if (*fn != '\0')
+	{
+		// Filename specified -> rename
+		return true;
+	}
+	else
+	{
+		// Filename empty -> unlink
+		return true;
+	}
 }
 
 
@@ -285,4 +296,15 @@ bool fs_getpos(uint16_t m2_fd, uint32_t *pos)
 	bool res = ((x = ftell(p->fd)) != -1);
 	*pos = res ? x : 0;
 	return res;
+}
+
+
+// fs_setpos()
+// Sets the current file position
+//
+bool fs_setpos(uint16_t m2_fd, uint32_t pos)
+{
+	fs_index_ptr p = fs_find_fd(m2_fd, true);
+
+	return (fseek(p->fd, pos, SEEK_SET) != -1);
 }
