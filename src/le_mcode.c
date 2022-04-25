@@ -78,10 +78,10 @@ uint32_t le_execute(uint8_t modn)
 	
 	// Set stack to first location above data frames
 	// and clear first 3 bytes to allow RTN from main module (#1)
-	gs_PC = gs_L = 0;
+	gs_PC = gs_L = gs_CS = 0;
 	gs_M = 0;
 	gs_S = data_top;
-	stk_mark(CALL_LOCAL, 0);
+	stk_mark(CALL_EXT, 0);
 
 	// Setup registers and call procedure 0 of module
 	set_module_ptr(modn);
@@ -764,6 +764,7 @@ uint32_t le_execute(uint8_t modn)
 				// Save the stack, since it will be overwritten by loaded module
 				// We need to save datatop...gs_S
 				uint16_t saved_gs_L = gs_L;
+				uint16_t saved_gs_CS = gs_CS;
 				uint16_t saved_gs_PC = gs_PC;
 				uint16_t saved_gs_SP = gs_SP;
 				uint16_t saved_data_top = data_top;
@@ -795,6 +796,7 @@ uint32_t le_execute(uint8_t modn)
 				data_top = saved_data_top;
 				gs_SP = saved_gs_SP;
 				gs_PC = saved_gs_PC;
+				gs_CS = saved_gs_CS;
 				gs_L = saved_gs_L;
 				free(fn);
 
@@ -1448,16 +1450,25 @@ uint32_t le_execute(uint8_t modn)
 		case 0354 : {
 			// RTN  return from procedure
 			// Reset stack pointer to previous state
-			gs_S = gs_L;
+			gs_S = gs_CS;
 
 			// Restore caller status from stack
-			gs_L = dsh_mem[gs_S + 1];
 			gs_PC = dsh_mem[gs_S + 2];
 
 			uint16_t call_mod = dsh_mem[gs_S];
-			if (call_mod != 0)
-				// Was an external call
+			if (call_mod >= 0x100)
+			{
+				// Local call
+				gs_CS = call_mod - 0x100;
+				gs_L = gs_CS;
+			}
+			else
+			{
+				// External call (mem[S] contains module number)
+				gs_L = dsh_mem[gs_S + 1];
+				gs_CS = gs_L;
 				set_module_ptr((uint8_t) call_mod);
+			}
 			break;
 		}
 

@@ -156,7 +156,7 @@ void svc_file_func(uint8_t modn)
 			// Rename(VAR f: File; filename: ARRAY OF CHAR)
 			char *fn;
 			char *p = get_filename(&fn);
-			VERBOSE("rename %s\n", fn);
+			VERBOSE("rename m2fd=%d, '%s'\n", m2_fd, fn);
 			free(p);
 			break;
 		}

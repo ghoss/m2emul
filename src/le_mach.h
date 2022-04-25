@@ -88,6 +88,7 @@ extern uint16_t gs_IR;		// Instruction register
 extern uint16_t gs_G;		// Data frame base address
 extern uint16_t gs_L;		// Local segment address
 extern uint16_t gs_S;		// Stack pointer
+extern uint16_t gs_CS;		// Call stack pointer
 extern uint16_t gs_P;  		// Process base address
 extern uint16_t gs_M;		// process interrupt mask (bitset)
 extern bool gs_REQ;			// Interrupt request

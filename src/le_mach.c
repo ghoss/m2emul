@@ -24,6 +24,7 @@ uint16_t gs_IR;
 uint16_t gs_G;
 uint16_t gs_L;
 uint16_t gs_S;
+uint16_t gs_CS;
 uint16_t gs_P;
 uint16_t gs_M;
 bool gs_REQ;

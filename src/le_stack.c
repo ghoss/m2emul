@@ -124,8 +124,9 @@ void stk_mark(enum es_calltype_t ct, uint16_t arg)
 {
     uint16_t old_S = gs_S;
 
-	// S + 0 = previous module number or (gs_L+0xff) for local call
-	dsh_mem[old_S] = ((ct == CALL_EXT) || (ct == CALL_FORMAL)) ? arg : 0;
+	// S + 0 = previous module number or (gs_CS+0xff) for local call
+	dsh_mem[old_S] =
+		((ct == CALL_EXT) || (ct == CALL_FORMAL)) ? arg : (gs_CS + 0x100);
 
 	// S + 1 = previous local proc. data ptr
 	// S + 2 = previous PC
@@ -133,5 +134,6 @@ void stk_mark(enum es_calltype_t ct, uint16_t arg)
     dsh_mem[old_S + 2] = gs_PC;
 
     gs_S += 4;
+	gs_CS = old_S;
 	gs_L = old_S;
 }
