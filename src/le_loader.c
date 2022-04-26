@@ -213,24 +213,26 @@ void le_parse_objfile(FILE *f)
 
                 // Procedure entry point section
                 n = le_rword(f) - 1;
-                w = le_rword(f);
+				uint16_t pidx = le_rword(f);
 
-				// Allocate new entry in temporary procedure list
-				if ((p = malloc(sizeof(proctmp_t))) == NULL)
-					le_memerr();
+				for (uint16_t i = 0; i < n; i ++)
+				{
+					// Allocate new entry in temporary procedure list
+					if ((p = malloc(sizeof(proctmp_t))) == NULL)
+						le_memerr();
 
-				// Store first entry point into table
-				p->idx = w;
-				p->entry = le_rword(f);
-				p->next = mod->proc_tmp;
-				p->fixup = NULL;
-				p->fixup_n = 0;
-				mod->proc_tmp = p;
-				if (w + 1 > mod->proc_n)
-					mod->proc_n = w + 1;
-				
-				// Ignore extra entry points for now
-                le_skip(f, (n - 1) << 1);
+					// Old format: one entry per procedure section (pidx != 0)
+					// New format: all entries in procedure section #0
+					p->idx = (pidx != 0) ? pidx : i;
+
+					p->entry = le_rword(f);
+					p->next = mod->proc_tmp;
+					p->fixup = NULL;
+					p->fixup_n = 0;
+					mod->proc_tmp = p;
+					if (p->idx >= mod->proc_n)
+						mod->proc_n = p->idx + 1;
+				}
             }
             else {
                 n = (le_rword(f) << 1) - 2;

@@ -71,7 +71,7 @@ void svc_heap_func(uint8_t mod)
 
 		case 2 :
 			// Reset heap to limit
-			hp_free_all(mod, dsh_mem[vadr]);
+			// hp_free_all(mod, dsh_mem[vadr]);
 			break;
 
 		default :
@@ -129,11 +129,11 @@ void svc_file_func(uint8_t modn)
 	{
 		case 0 : {
 			// Create(VAR f: File; mediumname: ARRAY OF CHAR)
-			char *fn;
-			char *p = get_filename(&fn);
-			res = fs_open(modn, "", true, m2_fd);
-			VERBOSE("create %s\n", fn);
-			free(p);
+			char *fn = malloc(1);
+			es_pop(); es_pop();		// Consume medium name
+
+			*fn = '\0';
+			res = fs_open(modn, fn, fn, true, m2_fd);
 			break;
 		}
 
@@ -147,8 +147,7 @@ void svc_file_func(uint8_t modn)
 			char *fn;
 			char *p = get_filename(&fn);
 			bool create = dsh_mem[es_pop()];
-			res = fs_open(modn, fn, create, m2_fd);
-			free(p);
+			res = fs_open(modn, fn, p, create, m2_fd);
 			break;
 		}
 
@@ -156,8 +155,7 @@ void svc_file_func(uint8_t modn)
 			// Rename(VAR f: File; filename: ARRAY OF CHAR)
 			char *fn;
 			char *p = get_filename(&fn);
-			res = fs_rename(m2_fd, fn);
-			free(p);
+			res = fs_rename(m2_fd, fn, p);
 			break;
 		}
 
@@ -177,6 +175,12 @@ void svc_file_func(uint8_t modn)
 			// SetModify(VAR f: File)
 			fs_reopen(m2_fd, FS_MODIFY);
 			VERBOSE("setmodify\n");
+			break;
+
+		case 7 :
+			// SetOpen(VAR f: File)
+			// NOP command
+			res = true;
 			break;
 
 		case 8 : {
@@ -216,10 +220,10 @@ void svc_file_func(uint8_t modn)
 			break;
 
 		case 13 : {
+			// ReadWord(VAR f: File; VAR w: WORD)
 			uint16_t w;
 			res = fs_read(m2_fd, &w, false);
-			dsh_mem[es_pop()] = res ? w : 0;
-			VERBOSE("readword\n")
+			dsh_mem[es_pop()] = res ? bswap_16(w) : 0;
 			break;
 		}
 
@@ -243,8 +247,6 @@ void svc_file_func(uint8_t modn)
 			break;
 		}
 
-		case 7 :
-			// SetOpen(VAR f: File)
 		default :
 			error(1, 0, "Filesystem command %d not implemented", cmd);
 			break;

@@ -41,11 +41,12 @@ void le_transfer(bool chg, uint16_t to, uint16_t from)
 // Main interpreter loop
 // Executes specified module and procedure
 //
-uint32_t le_execute(uint8_t modn)
+uint32_t le_execute(uint8_t exec_mod)
 {
-	mod_entry_t *modp;	// Pointer to current module
-	uint8_t *code_p;	// Pointer to module code frame
+	mod_entry_t *modp;		// Pointer to current module
+	uint8_t *code_p;		// Pointer to module code frame
 	uint32_t counter = 0;	// M-code counter
+	uint8_t modn;
 
 	// le_next()
 	// Fetch next instruction
@@ -84,7 +85,7 @@ uint32_t le_execute(uint8_t modn)
 	stk_mark(CALL_EXT, 0);
 
 	// Setup registers and call procedure 0 of module
-	set_module_ptr(modn);
+	set_module_ptr(exec_mod);
 	gs_PC = modp->proc[0];
 
 	do {
@@ -749,7 +750,7 @@ uint32_t le_execute(uint8_t modn)
 			if (call != 1)
 			{
 				// All calls except external module load
-				le_supervisor_call(modn, call);
+				le_supervisor_call(exec_mod, call);
 			}
 			else
 			{
@@ -770,26 +771,10 @@ uint32_t le_execute(uint8_t modn)
 				uint16_t saved_data_top = data_top;
 				data_top = gs_S;
 
-				// Try to load the module
+				// Try to load and execute the module
 				uint8_t top = le_load_initfile(fn, "SYS.");
 				if (top > 0)
-				{
-					// Execute module
 					le_execute(top);
-
-					uint8_t cur_top = mach_num_modules();
-					while (-- cur_top >= top)
-					{
-						// Release memory occupied by module and dependencies
-						data_top -= mach_unload_top();
-
-						// Close all files opened by module
-						fs_close_all(cur_top);
-						
-						// Release heap memory allocated by module
-						hp_free_all(cur_top, 0);
-					}
-				}
 
 				// Restore the stack
 				gs_S = data_top;
@@ -1526,6 +1511,21 @@ uint32_t le_execute(uint8_t modn)
 			break;
 		}
 	} while (gs_PC != 0);
+
+	// Post-execution stage:
+	// Clean up loaded modules, heap and file descriptors
+	uint8_t cur_top = mach_num_modules();
+	while (--cur_top >= exec_mod)
+	{
+		// Release memory occupied by module and dependencies
+		data_top -= mach_unload_top();
+
+		// Close all files opened by module
+		fs_close_all(cur_top);
+		
+		// Release heap memory allocated by module
+		hp_free_all(cur_top, 0);
+	}
 
 	return counter;
 }

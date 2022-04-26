@@ -18,6 +18,8 @@ struct fs_index_t {
 	struct fs_index_t *next;	// Pointer to next header
 	uint16_t m2file;			// Underlying Modula-2 file descriptor
 	FILE *fd;					// Associated UNIX file descriptor
+	char *fname;				// Associated UNIX filename
+	char *fname_buf;			// Actual char buffer of filename
 	bool temp;					// TRUE if temporary file
 	uint8_t owner;				// Module index of owner
 };
@@ -108,7 +110,7 @@ fs_index_ptr fs_find_fd(uint16_t m2_fd, bool fatal_err)
 // If the filename is empty, a temporary file is created.
 // m2_fd points to the Modula-2 file descriptor of the caller.
 //
-bool fs_open(uint8_t modn, char *fn, bool create, uint16_t m2_fd)
+bool fs_open(uint8_t mod, char *fn, char *fn_buf, bool create, uint16_t m2_fd)
 {
 	FILE *f;
 	bool temp = (*fn == '\0');
@@ -116,8 +118,10 @@ bool fs_open(uint8_t modn, char *fn, bool create, uint16_t m2_fd)
 	if (temp)
 	{
 		// Create temporary file
-		char template[16] = "mule_tmp.XXXXXX";
-		int fno = mkstemp(template);
+		fn = malloc(16);
+		fn_buf = fn;
+		strcpy(fn, "mule_tmp.XXXXXX");
+		int fno = mkstemp(fn);
 		f = fdopen(fno, "w");
 		create = true;
 	}
@@ -137,8 +141,10 @@ bool fs_open(uint8_t modn, char *fn, bool create, uint16_t m2_fd)
 		
 		p->fd = f;
 		p->m2file = m2_fd;
-		p->owner = modn;
+		p->owner = mod;
 		p->temp = temp;
+		p->fname = fn;
+		p->fname_buf = fn_buf;
 		p->next = fd_list;
 		fd_list = p;
 		fs_cache_last(p);
@@ -163,17 +169,25 @@ bool fs_reopen(uint16_t m2_fd, enum fs_filemode_t fmode)
 }
 
 
-// fs_close()
-// Closes an open file. If it was temporary, it is deleted.
+// fs_close_int()
+// Internal helper function for fs_close() and fs_close_all().
 //
-bool fs_close(uint16_t m2_fd)
+bool fs_close_int(fs_index_ptr p)
 {
-	fs_index_ptr p = fs_find_fd(m2_fd, false);
-	if (p == NULL)
-		return false;
+	bool res = true;
 
 	// Physically close file
 	fclose(p->fd);
+
+	// Unlink the file if it was temporary
+	if (p->temp && (unlink(p->fname) != 0))
+	{
+		res = false;
+		error(0, errno, "fs_close unlink failed");
+	}
+
+	// Free filename buffer associated with file
+	free(p->fname_buf);
 
 	// Remove file entry from index list
 	fs_index_ptr cur = fd_list;
@@ -196,9 +210,22 @@ bool fs_close(uint16_t m2_fd)
 			cur = cur->next;
 		}
 	}
+	return res;
+}
+
+
+// fs_close()
+// Closes an open file. If it was temporary, it is deleted.
+//
+bool fs_close(uint16_t m2_fd)
+{
+	fs_index_ptr p = fs_find_fd(m2_fd, false);
 
 	fs_cache_last(NULL);
-	return true;
+	if (p != NULL)
+		return fs_close_int(p);
+	else
+		return false;
 }
 
 
@@ -208,30 +235,19 @@ bool fs_close(uint16_t m2_fd)
 void fs_close_all(uint16_t owner)
 {
 	fs_index_ptr cur = fd_list;
-	fs_index_ptr prev = NULL;
 
 	while (cur != NULL)
 	{
 		if (cur->owner == owner)
 		{
-			fs_index_ptr p = cur;
-			fclose(cur->fd);
-
-			if (prev != NULL)
-			{
-				prev->next = cur->next;
-				cur = prev;
-			}
-			else
-			{
-				fd_list = cur->next;
-				cur = fd_list;
-			}
-
-			free(p);
+			fs_index_ptr p = cur->next;
+			fs_close_int(cur);
+			cur = p;
 		}
-		prev = cur;
-		cur = cur->next;
+		else
+		{
+			cur = cur->next;
+		}
 	}
 
 	fs_cache_last(NULL);
@@ -242,18 +258,24 @@ void fs_close_all(uint16_t owner)
 // Renames the open file f to a new name
 // If the name is empty, f is converted to a temporary file.
 //
-bool fs_rename(uint16_t m2_fd, char *fn)
+bool fs_rename(uint16_t m2_fd, char *fn, char *fn_buf)
 {
-	// fs_index_ptr p = fs_find_fd(m2_fd, true);
+	fs_index_ptr p = fs_find_fd(m2_fd, true);
 
 	if (*fn != '\0')
 	{
 		// Filename specified -> rename
-		return true;
+		p->temp = false;
+		bool res = (rename(p->fname, fn) != 0);
+		free(p->fname_buf);
+		p->fname = fn;
+		p->fname_buf = fn_buf;
+		return res;
 	}
 	else
 	{
-		// Filename empty -> unlink
+		// Filename empty -> convert to temporary file
+		p->temp = true;
 		return true;
 	}
 }
