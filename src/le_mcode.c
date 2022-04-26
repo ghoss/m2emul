@@ -1524,7 +1524,7 @@ uint32_t le_execute(uint8_t exec_mod)
 		fs_close_all(cur_top);
 		
 		// Release heap memory allocated by module
-		hp_free_all(cur_top, 0);
+		hp_free_all(cur_top, UINT16_MAX);
 	}
 
 	return counter;

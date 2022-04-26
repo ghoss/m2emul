@@ -71,7 +71,7 @@ void svc_heap_func(uint8_t mod)
 
 		case 2 :
 			// Reset heap to limit
-			// hp_free_all(mod, dsh_mem[vadr]);
+			hp_free_all(mod, dsh_mem[vadr]);
 			break;
 
 		default :

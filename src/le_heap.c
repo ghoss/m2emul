@@ -105,7 +105,7 @@ uint16_t hp_alloc(uint8_t mod, uint16_t sz)
 // hp_free_int()
 // Deallocate the heap memory previously allocated
 // to "ptr" if by_ptr=true, or allocated to "mod"
-// if by_ptr=false. Only check pointers above "limit".
+// if by_ptr=false. Only check pointers below/equal to "limit".
 //
 void hp_free_int(uint8_t mod, uint16_t ptr, uint16_t limit, bool by_ptr)
 {
@@ -134,45 +134,41 @@ void hp_free_int(uint8_t mod, uint16_t ptr, uint16_t limit, bool by_ptr)
 	}
 
 	// Scan block list for address
-	while ((cur != NULL) && (cur->adr >= limit))
+	while (cur != NULL)
 	{
-		if (is_match(cur))
+		if ((cur->adr <= limit) && (cur->owner != 0) && is_match(cur))
 		{
-			// Found
-			if (cur->owner != 0)
+			// Valid pointer, proceed to release
+			cur->owner = 0;
+
+			// Consolidate with previous block
+			if ((prev != NULL) && (prev->adr <= limit) && is_free(prev))
 			{
-				// Valid pointer, proceed to release
-				cur->owner = 0;
-
-				// Consolidate with previous block
-				if ((prev != NULL) && is_free(prev))
-				{
-					consolidate(prev, cur);
-					cur = prev;
-				}
-				
-				// Consolidate with next block
-				if ((cur->next != NULL) && is_free(cur->next))
-					consolidate(cur, cur->next);
-
-				if (cur->next == NULL)
-				{
-					// Last block above heap_top
-					hp_header_ptr p = heap_top;
-					while (p->next != cur)
-						p = p->next;
-					gs_H = p->adr;
-					p->next = NULL;
-					free(cur);
-					return;
-				}
-
-				// Return after one deallocation if pointer mode
-				if (by_ptr)
-					return;
-				else
-					continue;
+				consolidate(prev, cur);
+				cur = prev;
 			}
+			
+			// Consolidate with next block
+			if ((cur->next != NULL) && is_free(cur->next))
+				consolidate(cur, cur->next);
+
+			if (cur->next == NULL)
+			{
+				// Last block above heap_top
+				hp_header_ptr p = heap_top;
+				while (p->next != cur)
+					p = p->next;
+				gs_H = p->adr;
+				p->next = NULL;
+				free(cur);
+				return;
+			}
+
+			// Return after one deallocation if pointer mode
+			if (by_ptr)
+				return;
+			else
+				continue;
 		}
 		prev = cur;
 		cur = cur->next;
@@ -189,7 +185,7 @@ void hp_free_int(uint8_t mod, uint16_t ptr, uint16_t limit, bool by_ptr)
 //
 void hp_free(uint16_t ptr)
 {
-	hp_free_int(0, ptr, 0, true);
+	hp_free_int(0, ptr, UINT16_MAX, true);
 }
 
 
