@@ -265,7 +265,6 @@ uint32_t le_execute(uint8_t exec_mod)
 
 		case 043 : {
 			// LED
-			_HALT
 			uint8_t ext_mod = le_next();		// Module number
 			uint8_t ext_adr = le_next();		// Data word offset
 			uint16_t ofs = module_tab[ext_mod].data_ofs + ext_adr;
@@ -963,7 +962,6 @@ uint32_t le_execute(uint8_t exec_mod)
 
 		case 0275 : {
 			// ROR
-			_HALT
 			uint16_t i = es_pop() & 0xf;
 			uint16_t j = es_pop();
 			uint32_t k = (j << 16) >> i;
@@ -1192,7 +1190,6 @@ uint32_t le_execute(uint8_t exec_mod)
 
 		case 0326 : {
 			// MSK
-			_HALT
 			uint16_t i = es_pop() & 0xf;
 			es_push( 0xffff << (i - 16) );
 			break;
