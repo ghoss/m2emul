@@ -5,14 +5,14 @@ This will become an interpreter and virtual machine for Lilith Modula-2 M-Code o
 Work in progress.
 
 ## Current Development Status
-* M-Code Loader fully functional (can load and stage main module and its dependencies).
+* M-Code Loader fully functional (can load and stage modules and their dependencies).
 * Runtime debugging is functional:
   * Single-step execution
   * Set breakpoint / execute to breakpoint
   * Register and stack display
   * Procedure call chain display
   * Inspection of data words (variables)
-* Interpreter can already execute moderately complex Modula-2 programs.
+* Interpreter can already execute the ETHZ Modula-2 single pass compiler.
 * Some M-Codes are still disabled for debugging however (due to ongoing tests).
 
 ## Key Features Compared To The Lilith Machine
@@ -27,7 +27,6 @@ Work in progress.
 * On the Lilith, all modules share the same 65K (16-bit) address space. **m2emul** provides more memory to programs while still maintaining the original 16-bit instruction set by assigning each module its own code space (max. 65KB per module).
 ### Planned Features
 * Framebuffer compatible with original code for graphical output (currently, the emulator only runs in terminal-based text mode).
-* Optional support for disk image files in Medos-2 format (such as those provided for Jos Dreesen's *Emulith* emulator).
 
 ## Compiling And Installation
 1. Download the .tar.gz packages from the "[Releases](https://github.com/ghoss/m2emul/releases)" page.
