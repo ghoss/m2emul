@@ -12,6 +12,7 @@ Work in progress.
   * Register and stack display
   * Procedure call chain display
   * Inspection of data words (variables)
+* Provides a minimal set of "standard" Modula-2 runtime libraries to run a simple command interpreter and the ETHZ single pass compiler developed by Niklaus Wirth. 
 * Interpreter can already execute the ETHZ Modula-2 single pass compiler.
 * Some M-Codes are still disabled for debugging however (due to ongoing tests).
 
@@ -54,5 +55,5 @@ object_file is the filename of a Lilith M-Code (OBJ) file.
 ### Practical use
 * Download all runtime files in the GitHub directory `disk` to a directory of your choice (e.g. `my_directory`).
 * Start the MULE command interpreter (shell) with `mule my_directory/Comint`.
-* You can now compile any Modula-2 files in `my_directory` by typing the command `compile` at the command prompt.
+* You can now compile any Modula-2 files in `my_directory` with Niklaus Wirth's Modula-2 single pass compiler by typing the command `compile` at the command prompt.
 * More commands and shell features to follow…
