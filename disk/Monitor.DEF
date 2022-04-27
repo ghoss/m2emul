@@ -1,0 +1,74 @@
+(******************************************************
+**
+** MODULE Monitor
+**
+** Origin:
+** - medos42a Lilith disk image by Jos Dreesen
+**
+** Modifications by Guido Hoss for MULE M-Code Emulator
+** - Removed EXPORT list (for M2 single pass compiler)
+** - Removed "Call" procedure and "PROCESS" data type
+**   (for M2 single pass compiler)
+**
+** 02.04.2022 
+**
+*******************************************************)
+
+(***************************************
+*                                      *
+*          M E D O S - 2               *
+*          *************               *
+*                                      *
+*                                      *
+*          Monitor:                    *
+*                                      *
+*          Module hideing proces-      *
+*          ses within MEDOS-2.         *
+*                                      *
+*          Version 2  26.05.81         *    
+*                                      *
+*                                      *
+*          Svend Erik Knudsen          *
+*          Institut fuer Informatik    *
+*          ETH-Zuerich                 *
+*          CH-8092 Zuerich             *
+*                                      *
+***************************************)
+
+DEFINITION MODULE Monitor;
+
+  TYPE
+    Status = (normal,
+              instructionerr, priorityerr,
+              spaceerr, rangeerr,
+              addressoverflow, realoverflow, 
+              cardinaloverflow, integeroverflow,
+              functionerr,
+              halted,
+              asserted, warned, stopped,
+              callerr);
+
+    Time = RECORD
+             day:         CARDINAL; (* ((year-1900)*20B + month)*40B + day *)
+             minute:      CARDINAL; (* hour*60 + minute *)
+             millisecond: CARDINAL; (* second*1000 + msecond *)
+           END;
+
+
+  PROCEDURE Terminate(st: Status);
+
+  PROCEDURE CurrentLevel(): CARDINAL;
+
+  PROCEDURE SharedLevel(): CARDINAL;
+
+  PROCEDURE TermProcedure(term: PROC);
+ 
+ 
+  PROCEDURE SetTime(t: Time);
+
+  PROCEDURE GetTime(VAR t: Time);
+
+
+  PROCEDURE Read(VAR ch: CHAR);
+
+END Monitor.

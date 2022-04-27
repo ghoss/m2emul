@@ -1,0 +1,31 @@
+(******************************************************
+**
+** MODULE LongInt
+**
+** By Guido Hoss for MULE M-Code Emulator
+**
+** This support module implements the necessary LONGINT
+** data type and functions to allow compilation of the
+** M2 single pass compiler by the original multipass
+** compiler.
+**
+** 02.04.2022 
+**
+*******************************************************)
+
+DEFINITION MODULE LongInt;
+
+  TYPE
+    LONGINT = RECORD
+      hi, lo: CARDINAL;
+    END;
+
+
+  PROCEDURE LONG(hi, lo: CARDINAL): LONGINT;
+
+  PROCEDURE LGE(x, y: LONGINT): BOOLEAN;
+
+  PROCEDURE LADD(x, y: LONGINT): LONGINT;
+  PROCEDURE LSUB(x, y: LONGINT): LONGINT;
+
+END LongInt.

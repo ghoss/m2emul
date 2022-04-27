@@ -1,0 +1,26 @@
+(******************************************************
+**
+** MODULE MathLib0
+**
+** Origin:
+** - medos42a Lilith disk image by Jos Dreesen
+**
+** Modifications by Guido Hoss for MULE M-Code Emulator
+** - Removed EXPORT list (for M2 single pass compiler)
+**
+** 02.04.2022 
+**
+*******************************************************)
+
+DEFINITION MODULE MathLib0;
+  (*standard functions;  J.Waldvogel/N.Wirth,  10.12.80*)
+
+  PROCEDURE sqrt(x: REAL): REAL;
+  PROCEDURE exp(x: REAL): REAL;
+  PROCEDURE ln(x: REAL): REAL;
+  PROCEDURE sin(x: REAL): REAL;
+  PROCEDURE cos(x: REAL): REAL;
+  PROCEDURE arctan(x: REAL): REAL;
+  PROCEDURE real(x: INTEGER): REAL;
+  PROCEDURE entier(x: REAL): INTEGER;
+END MathLib0.
