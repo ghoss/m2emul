@@ -39,6 +39,7 @@ Work in progress.
     ```
 
 ## Usage
+### Basic Syntax
 ```
 USAGE: mule [-hV] [object_file]
 
@@ -50,3 +51,8 @@ USAGE: mule [-hV] [object_file]
 
 object_file is the filename of a Lilith M-Code (OBJ) file.
 ```
+### Practical use
+* Download all runtime files in the GitHub directory `disk` to a directory of your choice (e.g. `my_directory`).
+* Start the MULE command interpreter (shell) with `mule my_directory/Comint`.
+* You can now compile any Modula-2 files in `my_directory` by typing the command `compile` at the command prompt.
+* More commands and shell features to follow…

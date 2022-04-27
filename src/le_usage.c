@@ -19,7 +19,7 @@
 //
 void le_prog_version()
 {
-    printw(PKG " v" PACKAGE_VERSION 
+    printf(PKG " v" PACKAGE_VERSION 
 		" by " PACKAGE_BUGREPORT" (" VERSION_BUILD_DATE ")\n"
         "Modula-2 M-Code Emulator\n\n"
 	);
@@ -31,8 +31,8 @@ void le_prog_version()
 //
 void le_prog_usage()
 {
-    printw(
-        "USAGE: " PKG " [-hV] [-d path] [object_file]\n\n"
+    printf(
+        "USAGE: " PKG " [-hV] [object_file]\n\n"
  		"-t\tEnable trace mode (runtime debugging)\n"
 		"-h\tShow this help information\n"
         "-V\tShow version information\n\n"
