@@ -58,5 +58,7 @@ object_file is the filename of a Lilith M-Code (OBJ) file.
 ### Practical use
 * Download all runtime files in the GitHub directory `disk` to a directory of your choice (e.g. `my_directory`).
 * Start the MULE command interpreter (shell) with `mule my_directory/Comint`.
-* You can now compile any Modula-2 files in `my_directory` with Niklaus Wirth's Modula-2 single pass compiler by typing the command `compile` at the command prompt.
+* You can now compile any Modula-2 files in `my_directory` with Niklaus Wirth's Modula-2 single pass compiler by typing the command `compile` at the command prompt. Enter the source file name at the compiler's `in>` prompt (note: filenames are case-sensitive).
+* Exit the Modula-2 compiler by pressing the ESC (Escape) key at the `in>` prompt.
+* For example, compile the include "Hello World" program (`Hello.MOD`) and run it by typing `Hello` at the command interpreter prompt.
 * More commands and shell features to follow…
