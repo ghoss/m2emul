@@ -14,6 +14,9 @@
 **   multipass compiler
 ** - Imports LONGINT from special support module to 
 **   allow for compilation with multipass compiler
+** - Accepts UNIX LF as EOL in addition to 
+**   Liliths 36C EOL character to allow for easy editing
+**   of Modula-2 sources with UNIX-based editors.
 **
 ** 02.04.2022 
 **
