@@ -1,0 +1,65 @@
+(******************************************************
+**
+** MODULE M2SS (originally M2S)
+**
+** Niklaus Wirth's Modula-2 single pass compiler
+** (believed to be source code version of 2.8.1986)
+**
+** Origin:
+** - "mfk301" Lilith disk image by Jos Dreesen
+**
+** Modifications by Guido Hoss for MULE M-Code Emulator
+** - Renamed from "M2S" to "M2SS" to avoid name
+**   confusion during bootstrap compilation with
+**   multipass compiler
+**
+** 02.04.2022 
+**
+*******************************************************)
+
+DEFINITION MODULE M2SS; (*NW 17.8.83 / 25.6.86*)
+
+  FROM FileSystem IMPORT 
+    File;
+
+  FROM LongInt IMPORT
+    LONGINT;
+
+  CONST IdBufLeng     = 8000;
+
+  TYPE  Symbol = (null,
+        times, slash, div, mod, and,
+        plus, minus, or,
+        eql, neq, lss, leq, gtr, geq, in,
+        arrow, period, comma, colon, ellipsis, rparen, rbrak, rbrace,
+        of, then, do, to, by, 
+        lparen, lbrak, lbrace, not, becomes, number, string, ident,
+        semicolon, bar, end, else, elsif, until,
+        if, while, repeat, loop, with, exit, return, case, for,
+        array, pointer, record, set,
+        begin, code, const, type, var, forward, procedure, module,
+        definition, implementation, export, qualified, from, import, eof);
+
+  (*sym, id, numtyp, intval, dblval, realval, lrlval
+    are implicit results of GetSym*)
+
+  VAR sym   : Symbol;
+    id      : CARDINAL;
+    numtyp  : CARDINAL;
+       (* 1 = card/int, 2 = longint, 3 = char, 4 = real, 5 = longreal*)
+    intval  : CARDINAL;
+    dblval  : LONGINT;
+    realval : REAL;
+    scanerr : BOOLEAN;
+    source  : File;
+    IdBuf   : ARRAY [0..IdBufLeng-1] OF CHAR; (*identifier buffer*)
+
+  PROCEDURE InitScanner(VAR name: ARRAY OF CHAR);
+  PROCEDURE Diff(i, I: CARDINAL): INTEGER;
+  PROCEDURE Enter(id: ARRAY OF CHAR): CARDINAL;
+  PROCEDURE KeepId;
+  PROCEDURE GetSym;
+  PROCEDURE Mark(n: CARDINAL);
+  PROCEDURE CloseScanner;
+
+END M2SS.

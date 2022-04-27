@@ -1,0 +1,42 @@
+(******************************************************
+**
+** MODULE M2STL (originally M3TL)
+**
+** Niklaus Wirth's Modula-2 single pass compiler
+** (believed to be source code version of 2.8.1986)
+**
+** Origin:
+** - "mfk301" Lilith disk image by Jos Dreesen
+**
+** Modifications by Guido Hoss for MULE M-Code Emulator
+** - Renamed from "M3RL" to "M2SRL" to avoid name
+**   confusion during bootstrap compilation with
+**   multipass compiler
+** - Adapted IMPORT lists to renamed module names
+**
+** 02.04.2022 
+**
+*******************************************************)
+
+DEFINITION MODULE M2STL;   (*NW 28.3.83 / 30.10.85*)
+  FROM M2SDL IMPORT ObjPtr, ObjClass, StrPtr, StrForm, ParPtr, PDPtr;
+
+  VAR topScope, Scope: ObjPtr;  (*header of scope located by Find*)
+
+  PROCEDURE FindInScope(id: CARDINAL; root: ObjPtr): ObjPtr;
+  PROCEDURE Find(id: CARDINAL): ObjPtr;
+  PROCEDURE FindImport(id: CARDINAL): ObjPtr;
+
+  PROCEDURE NewObj(id: CARDINAL; class: ObjClass): ObjPtr;
+  PROCEDURE NewStr(form: StrForm): StrPtr;
+  PROCEDURE NewPar(ident: CARDINAL; isvar: BOOLEAN; last: ParPtr): ParPtr;
+  PROCEDURE NewImp(scope, obj: ObjPtr);
+
+  PROCEDURE NewScope(kind: ObjClass);
+  PROCEDURE CloseScope;
+
+  PROCEDURE CheckUDP(obj, node: ObjPtr);
+  PROCEDURE MarkHeap;
+  PROCEDURE ReleaseHeap;
+  PROCEDURE InitTableHandler;
+END M2STL.

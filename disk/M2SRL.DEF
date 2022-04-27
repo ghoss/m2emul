@@ -1,0 +1,40 @@
+(******************************************************
+**
+** MODULE M2SRL (originally M3RL)
+**
+** Niklaus Wirth's Modula-2 single pass compiler
+** (believed to be source code version of 2.8.1986)
+**
+** Origin:
+** - "mfk301" Lilith disk image by Jos Dreesen
+**
+** Modifications by Guido Hoss for MULE M-Code Emulator
+** - Renamed from "M3RL" to "M2SRL" to avoid name
+**   confusion during bootstrap compilation with
+**   multipass compiler
+**
+** 02.04.2022 
+**
+*******************************************************)
+
+DEFINITION MODULE M2SRL; (*JG, 24.8.85*)
+
+  FROM M2SDL IMPORT ObjPtr;
+  FROM FileSystem IMPORT File;
+
+  VAR ModNo: CARDINAL; (*current module number*)
+      ModList: ObjPtr; (*list of loaded modules*)
+      RefFile: File;
+
+  PROCEDURE InitRef;
+
+  PROCEDURE InRef (VAR filename: ARRAY OF CHAR; VAR mod: ObjPtr;
+                   VAR adr: INTEGER; VAR pno: CARDINAL);
+
+  PROCEDURE OpenRef;
+  PROCEDURE CloseRef(adr: INTEGER; pno: CARDINAL);
+
+  PROCEDURE OutUnit(unit: ObjPtr);
+  PROCEDURE OutPos(sourcepos, pc: CARDINAL);
+
+END M2SRL.

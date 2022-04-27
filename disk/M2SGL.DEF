@@ -1,0 +1,98 @@
+(******************************************************
+**
+** MODULE M2SGL (originally M3GL)
+**
+** Niklaus Wirth's Modula-2 single pass compiler
+** (believed to be source code version of 2.8.1986)
+**
+** Origin:
+** - "mfk301" Lilith disk image by Jos Dreesen
+**
+** Modifications by Guido Hoss for MULE M-Code Emulator
+** - Renamed from "M3GL" to "M2SGL" to avoid name
+**   confusion during bootstrap compilation with
+**   multipass compiler
+**
+** 02.04.2022 
+**
+*******************************************************)
+
+DEFINITION MODULE M2SGL;    (*NW 19.5.83 / 18.10.84*)
+  FROM FileSystem IMPORT File;
+  FROM M2SDL IMPORT ObjPtr, StrPtr, ParPtr, ConstValue, KeyPtr;
+
+  TYPE ItemMode =
+      (conMd, cldMd, typMd, varMd, fldMd, procMd, codMd, expMd, adrMd, inxMd);
+
+  TYPE Item =
+      RECORD typ:  StrPtr;
+        CASE mode: ItemMode OF
+        conMd, cldMd:  val: ConstValue |
+        typMd:  |
+        varMd:  var: ObjPtr  |
+        fldMd:  off: INTEGER |
+        procMd: proc: ObjPtr; sp: INTEGER |
+        codMd:  cod: ObjPtr  |
+        expMd, adrMd, inxMd:
+        END
+      END ;
+
+  TYPE LabelRange = RECORD low, high: INTEGER; label: CARDINAL END ;
+
+  VAR pc, curLev, curPrio: CARDINAL; rngchk: BOOLEAN;
+
+  PROCEDURE load(VAR x: Item);      (*force loading of x*)
+  PROCEDURE loadAdr(VAR x: Item);   (*force loading of adr(x) *)
+  PROCEDURE fixup(loc: CARDINAL);   (*enter current label at loc*)
+  PROCEDURE fixupC(loc: CARDINAL);  (*enter current label at loc*)
+  PROCEDURE FixupEnter(L: CARDINAL; size: INTEGER);
+  PROCEDURE AllocString(s: CARDINAL; VAR adr, length: CARDINAL);
+
+  PROCEDURE GenItem(VAR x: Item; y, Scope: ObjPtr);
+            (*Scope is used for fields in with statements*)
+  PROCEDURE GenIndex(VAR x, y: Item);                 (*x := x[y]*)
+  PROCEDURE GenField(VAR x: Item; f: ObjPtr);         (*x := x.f*)
+  PROCEDURE GenWith(VAR x: Item; adr: INTEGER);
+  PROCEDURE GenDeRef(VAR x: Item);                    (*x := x^ *)
+
+  PROCEDURE GenNeg(VAR x: Item);                      (*x := -x*)
+  PROCEDURE GenNot(VAR x: Item);                      (*x := ~x*)
+  PROCEDURE GenAnd(VAR x: Item);
+  PROCEDURE GenOr(VAR x: Item);
+  PROCEDURE GenIn(VAR x, y: Item);                    (*x := x IN y*)
+  PROCEDURE GenSet(VAR x, e1, e2: Item);              (*x := {e1..e2}*)
+  PROCEDURE GenSingSet(VAR x, e: Item);               (*x := {e}*)
+  PROCEDURE GenOp(op: CARDINAL; VAR x, y: Item);      (*x := x*y*)
+  PROCEDURE PrepAss(VAR x: Item);
+  PROCEDURE GenAssign(VAR x, y: Item);
+
+  PROCEDURE GenFJ(VAR loc: CARDINAL);     (*forward jump; loc := label*)
+  PROCEDURE GenCFJ(VAR x: Item; VAR loc: CARDINAL);
+  PROCEDURE GenBJ(loc: CARDINAL);         (*backward jump to loc*)
+  PROCEDURE GenCBJ(VAR x: Item; loc: CARDINAL);
+
+  PROCEDURE PrepCall(VAR x: Item; VAR fpar: ParPtr);
+  PROCEDURE GenParam(VAR x: Item; fp: ParPtr);
+  PROCEDURE GenCall(VAR x: Item);
+  PROCEDURE GenEnter(VAR L: CARDINAL; proc: ObjPtr);
+  PROCEDURE GenResult(VAR x: Item; proc: ObjPtr);
+  PROCEDURE GenEnterMod(mod: ObjPtr);
+  PROCEDURE GenReturn;
+
+  PROCEDURE GenCase1(VAR x: Item; VAR L0: CARDINAL);
+  PROCEDURE GenCase2;
+  PROCEDURE GenCase3(L0, L1, n: CARDINAL; VAR tab: ARRAY OF LabelRange);
+  PROCEDURE GenTrap(n: CARDINAL);
+  PROCEDURE GenFor1(VAR v, e1: Item);
+  PROCEDURE GenFor2(VAR v, e2: Item);
+  PROCEDURE GenFor3(VAR e3: Item; VAR L0, L1: CARDINAL);
+  PROCEDURE GenFor4(VAR e3: Item; L0, L1: CARDINAL);
+
+  PROCEDURE GenStParam(VAR p, x: Item; fctno, parno: CARDINAL);
+  PROCEDURE GenStFct(VAR x: Item; fctno, parno: CARDINAL);
+  PROCEDURE CheckStack;
+  PROCEDURE GenEndDecl(ancestor: ObjPtr; modno: CARDINAL);
+  PROCEDURE InitGenerator;
+  PROCEDURE OutCodeFile(VAR name: ARRAY OF CHAR; stamp: KeyPtr;
+                 adr: INTEGER; pno, progid, modNo: CARDINAL; ModList: ObjPtr);
+END M2SGL.

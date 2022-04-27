@@ -1,0 +1,11 @@
+compile M2SS.DEF
+compile M2SDL.DEF
+compile M2SGL.DEF
+compile M2SRL.DEF
+compile M2STL.DEF
+compile M2SS.MOD
+compile M2SDL.MOD
+compile M2SGL.MOD
+compile M2SRL.MOD
+compile M2STL.MOD
+compile M2SPL.MOD
