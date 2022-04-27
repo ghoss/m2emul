@@ -1,0 +1,186 @@
+(******************************************************
+**
+** MODULE FileSystem
+**
+** Origin:
+** - medos42a Lilith disk image by Jos Dreesen
+**
+** Modifications by Guido Hoss for MULE M-Code Emulator
+** - Removed EXPORT list (for M2 single pass compiler)
+** - Simplified definition of "File" descriptor since
+**   bulk of processing and buffering is being handled
+**   by MULE resp. the underlying (Unix) host system.
+**
+** 02.04.2022 
+**
+*******************************************************)
+
+(***************************************
+*                                      *
+*          M E D O S - 2               *
+*          *************               *
+*                                      *
+*                                      *
+*          FileSystem:                 *
+*                                      *
+*          Interface for               *
+*          - FileSystem users  and     *
+*          - FileSystem drivers.       *
+*                                      *
+*          Version 2   2.10.80         *    
+*                                      *
+*                                      *
+*          Svend Erik Knudsen          *
+*          Institut fuer Informatik    *
+*          ETH-Zuerich                 *
+*          CH-8092 Zuerich             *
+*                                      *
+***************************************)
+
+DEFINITION MODULE FileSystem;
+
+  FROM SYSTEM IMPORT
+    ADDRESS, WORD;
+
+  TYPE
+    MediumType    = ARRAY [0..1] OF CHAR; 
+
+    Response      = (done, notdone, notsupported, callerror,
+                     unknownmedium, unknownfile, paramerror,
+                     toomanyfiles, eom, deviceoff,
+                     softparityerror, softprotected, softerror,
+                     hardparityerror, hardprotected, timeout, harderror);
+ 
+ 
+    File          = RECORD
+                      eof: BOOLEAN;
+                      res: Response;
+                      new: BOOLEAN;
+                    END;
+
+ 
+  (* The routines defined by the filesystem can be grouped in
+     routines for:  
+
+       1.  Opening, closing and renaming of files.   
+           (Create, Close, Lookup, Rename)
+
+       2.  Reading and writing of files.  
+           (SetRead, SetWrite, SetModify, SetOpen, Doio)
+ 
+       3.  Positioning of files. 
+           (SetPos, GetPos, Length)
+
+       4.  Streamlike handling of files.  
+           (Reset, Again, Read, Write, ReadChar, WriteChar)
+ 
+       5.  Handling of drivers.
+           (CreateMedium, RemoveMedium, FileCommand, DirectoryCommand)
+                                                                    *)
+ 
+ 
+ 
+  PROCEDURE Create(VAR f: File; mediumname: ARRAY OF CHAR);
+    (* creates a new temporary (or nameless) file f on the 
+       named device. *) 
+ 
+
+  PROCEDURE Close(VAR f: File);
+    (* terminates the operations on file f, i.e. cuts off the 
+       connection between variable f and the filesystem. A tem-
+       porary file will hereby be destroyed whereas a file with
+       a not empty name remains in the directory for later use. *)
+ 
+
+
+  PROCEDURE Lookup(VAR f: File; filename: ARRAY OF CHAR; new: BOOLEAN);
+    (* searches file 'filename' on device 'devicename'. If the   
+       file does not exist and 'new' is TRUE, a new file with 
+       the given name will be created. *)
+
+ 
+  PROCEDURE Rename(VAR f: File; filename: ARRAY OF CHAR);
+    (* changes the name of the file to 'filename'. IF the new
+       name is empty, f is changed to be a temporary file. *) 
+ 
+
+
+  PROCEDURE SetRead(VAR f: File);
+    (* initializes the file for reading. *)   
+ 
+ 
+  PROCEDURE SetWrite(VAR f: File);   
+    (* initializes the file for writing. *) 
+ 
+ 
+  PROCEDURE SetModify(VAR f: File); 
+    (* initializes the file for modifying. *) 
+ 
+   
+  PROCEDURE SetOpen(VAR f: File); 
+    (* terminates any input- or outputoperations on the file. *) 
+
+
+  PROCEDURE SetPos(VAR f: File; highpos, lowpos: CARDINAL);
+    (* sets the current position of file f to byte
+       highpos * 2**16 + lowpos. *)
+
+ 
+  PROCEDURE GetPos(VAR f: File; VAR highpos, lowpos: CARDINAL);
+    (* returns the current byte position of file f. *)  
+ 
+ 
+  PROCEDURE Length(VAR f: File; VAR highpos, lowpos: CARDINAL);
+    (* returns the length of file f in highpos and lowpos. *)
+ 
+ 
+  PROCEDURE Reset(VAR f: File);
+    (* sets the file into state opened and the position
+       to the beginning of the file. *) 
+ 
+ 
+  PROCEDURE Again(VAR f: File);
+    (* prevents a subsequent call of ReadWord (or ReadChar)
+       from reading the next value on the file. Instead, the  
+       value read just before the call of Again is returned 
+       once more. *) 
+
+ 
+  PROCEDURE ReadWord(VAR f: File; VAR w: WORD);
+    (* reads the next word on the file. *)      
+ 
+ 
+  PROCEDURE WriteWord(VAR f: File; w: WORD);
+    (* appends word w to the file. *) 
+ 
+ 
+  PROCEDURE ReadChar(VAR f: File; VAR ch: CHAR);
+    (* reads the next character on the file. *)
+ 
+ 
+  PROCEDURE WriteChar(VAR f: File; ch: CHAR);
+    (* appends character ch to the file. *) 
+
+ 
+  (* The following declarations are only usefull when programming 
+     or importing drivers. *)  
+
+ 
+  TYPE
+    FileProc      = PROCEDURE (VAR File); 
+    DirectoryProc = PROCEDURE (VAR File, ARRAY OF CHAR); 
+ 
+
+  PROCEDURE CreateMedium(mt: MediumType; mediumno: CARDINAL;
+                         fp: FileProc; dp: DirectoryProc;
+                         VAR done: BOOLEAN); 
+    (* makes the driver servicing medium (mt, mediumno) callable 
+       from the filesystem. *)
+
+ 
+  PROCEDURE RemoveMedium(mt: MediumType; mediumno: CARDINAL;
+                         VAR done: BOOLEAN);           
+    (* makes the driver serving (mt,mediumno) unknown to the 
+       filesystem. *)
+
+END FileSystem.

@@ -1,0 +1,45 @@
+(******************************************************
+**
+** MODULE Clock
+**
+** Origin:
+** - mfk301 Lilith disk image by Jos Dreesen
+**
+** Modifications by Guido Hoss for MULE M-Code Emulator
+** - Removed EXPORT list (for M2 single pass compiler)
+**
+** 02.04.2022 
+**
+*******************************************************)
+
+(***************************************
+*                                      *
+*          M E D O S - 2               *
+*          *************               *
+*                                      *
+*                                      *
+*          Clock                       *
+*                                      *
+*          Version 5  03.12.83         *    
+*                                      *
+*                                      *
+*          Svend Erik Knudsen          *
+*          Institut fuer Informatik    *
+*          ETH-Zuerich                 *
+*          CH-8092 Zuerich             *
+*                                      *
+***************************************)
+
+DEFINITION MODULE Clock;
+
+  TYPE
+    Time = RECORD
+             day:         CARDINAL; (* ((year-1900)*20B + month)*40B + day *)
+             minute:      CARDINAL; (* hour*60 + minute *)
+             millisecond: CARDINAL; (* second*1000 + millisecond *)
+           END;
+ 
+  PROCEDURE SetTime(t: Time);
+  PROCEDURE GetTime(VAR t: Time);
+
+END Clock.
