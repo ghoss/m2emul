@@ -1,0 +1,43 @@
+(******************************************************
+**
+** MODULE TerminalBase
+**
+** Origin:
+** - medos42a Lilith disk image by Jos Dreesen
+**
+** Modifications by Guido Hoss for MULE M-Code Emulator
+** - Removed EXPORT list (for M2 single pass compiler)
+**
+** 02.04.2022 
+**
+*******************************************************)
+
+(***************************************
+*                                      *
+*          M E D O S - 2               *
+*          *************               *
+*                                      *
+*                                      *
+*          TerminalBase                *
+*                                      *
+*          Version 4  07.06.82         *    
+*                                      *
+*                                      *
+*          Svend Erik Knudsen          *
+*          Institut fuer Informatik    *
+*          ETH-Zuerich                 *
+*          CH-8092 Zuerich             *
+*                                      *
+***************************************)
+
+DEFINITION MODULE TerminalBase;
+
+  TYPE ReadProcedure = PROCEDURE(VAR CHAR);
+  PROCEDURE AssignRead(rp: ReadProcedure; VAR done: BOOLEAN);
+  PROCEDURE Read(VAR ch: CHAR);
+
+  TYPE WriteProcedure = PROCEDURE(CHAR);
+  PROCEDURE AssignWrite(wp: WriteProcedure; VAR done: BOOLEAN);
+  PROCEDURE Write(ch: CHAR);
+
+END TerminalBase.

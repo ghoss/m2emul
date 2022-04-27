@@ -1,0 +1,55 @@
+(******************************************************
+**
+** MODULE DisplayDriver
+**
+** Origin:
+** - medos42a Lilith disk image by Jos Dreesen
+**
+** Modifications by Guido Hoss for MULE M-Code Emulator
+** - Removed EXPORT list (for M2 single pass compiler)
+**
+** 02.04.2022 
+**
+*******************************************************)
+
+DEFINITION MODULE DisplayDriver;   (*NW 10.6.82*)
+
+  TYPE BMDescriptor = RECORD f,w,h,z: CARDINAL END ;
+
+  (*1. Procedures referring to display hardware*)
+
+  PROCEDURE ScreenWidth(): CARDINAL;
+  PROCEDURE ScreenHeight(): CARDINAL;
+  PROCEDURE Show(VAR bmd: BMDescriptor; on: BOOLEAN);
+    (*show bitmap and turn display on or off*)
+
+  PROCEDURE BuildBMD(fp, width, height: CARDINAL;
+                     VAR bmd: BMDescriptor);
+    (*fp = frame pointer of bitmap, width must be multiple
+      of 16, height must be even*)
+
+  (*2. Procedures referring to default font*)
+  PROCEDURE DFF(): CARDINAL;  (*Default Font Frame*)
+  PROCEDURE CharWidth(): CARDINAL;
+  PROCEDURE LineHeight(): CARDINAL;
+
+  (*3. Objects referring to default bitmap*)
+
+  VAR BMD: BMDescriptor;            (*default bitmap descriptor*)
+  PROCEDURE BMF(): CARDINAL;        (*default bitmap frame*)
+  PROCEDURE MapHeight(): CARDINAL;  (* = ScreenHeight unless changed*)
+
+  PROCEDURE ChangeBitmap(height: CARDINAL; VAR done: BOOLEAN);
+    (*sets bitmap height, must be even and at least 2*LineHeight()*)
+
+  PROCEDURE Write(ch: CHAR);
+    (*the following control characters are interpreted:
+      10C BS  backspace one character
+      12C LF  next line, same x position
+      14C FF  clear page
+      15C CR  return to start of line
+      30C CAN clear line
+      36C EOL next line
+     177C DEL backspace one character and clear it *)
+
+END DisplayDriver.
