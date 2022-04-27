@@ -1,0 +1,52 @@
+(******************************************************
+**
+** MODULE Terminal
+**
+** Origin:
+** - medos42a Lilith disk image by Jos Dreesen
+**
+** Modifications by Guido Hoss for MULE M-Code Emulator
+** - Removed EXPORT list (for M2 single pass compiler)
+**
+** 02.04.2022 
+**
+*******************************************************)
+
+(***************************************
+*                                      *
+*          M E D O S - 2               *
+*          *************               *
+*                                      *
+*                                      *
+*          Terminal:                   *
+*                                      *
+*          Standard Input              *
+*          Standard Output             *
+*                                      *
+*          Version 2  24.10.80         *    
+*                                      *
+*                                      *
+*          Svend Erik Knudsen          *
+*          Institut fuer Informatik    *
+*          ETH-Zuerich                 *
+*          CH-8092 Zuerich             *
+*                                      *
+***************************************)
+
+DEFINITION MODULE Terminal;
+
+  PROCEDURE Read(VAR ch: CHAR);
+
+  PROCEDURE BusyRead(VAR ch: CHAR);
+
+  PROCEDURE ReadAgain;
+
+
+  PROCEDURE Write(ch: CHAR);
+
+  PROCEDURE WriteString(string: ARRAY OF CHAR);
+
+  PROCEDURE WriteLn;
+
+END Terminal.
+

@@ -1,0 +1,37 @@
+(******************************************************
+**
+** MODULE RealInOut
+**
+** Origin:
+** - medos42a Lilith disk image by Jos Dreesen
+**
+** Modifications by Guido Hoss for MULE M-Code Emulator
+** - Removed EXPORT list (for M2 single pass compiler)
+**
+** 02.04.2022 
+**
+*******************************************************)
+
+DEFINITION MODULE RealInOut;   (*N.Wirth  16.8.81*)
+
+  VAR Done: BOOLEAN;
+
+  PROCEDURE ReadReal(VAR x: REAL);
+  (*Read REAL number x from keyboard according to syntax:
+
+    ["+"|"-"] digit {digit} ["." digit {digit}] ["E"["+"|"-"] digit [digit]]
+
+    Done := "a number was read".
+    At most 7 digits are significant, leading zeros not
+    counting.  Maximum exponent is 38. Input terminates
+    with a blank or any control character.  DEL is used
+    for backspacing*)
+
+  PROCEDURE WriteReal(x: REAL; n: CARDINAL);
+  (*Write x using n characters. If fewer than n characters
+    are needed, leading blanks are inserted*)
+
+  PROCEDURE WriteRealOct(x: REAL);
+  (*Write x in octal form with exponent and mantissa*)
+
+END RealInOut.

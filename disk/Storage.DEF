@@ -1,0 +1,54 @@
+(******************************************************
+**
+** MODULE Storage
+**
+** Origin:
+** - medos42a Lilith disk image by Jos Dreesen
+**
+** Modifications by Guido Hoss for MULE M-Code Emulator
+** - Removed EXPORT list (for M2 single pass compiler)
+**
+** 02.04.2022 
+**
+*******************************************************)
+
+(***************************************
+*                                      *
+*          M E D O S - 2               *
+*          *************               *
+*                                      *
+*                                      *
+*          Storage:                    *
+*                                      *
+*          ALLOCATE and DEALLOCATE,    *
+*          procedures called by        *
+*          NEW and DISPOSE in          *
+*          MODULA-2, can be imported   *
+*          from this module.           * 
+*                                      *
+*          Version 2   5.10.80         *    
+*                                      *
+*                                      *
+*          Svend Erik Knudsen          *
+*          Institut fuer Informatik    *
+*          ETH-Zuerich                 *
+*          CH-8092 Zuerich             *
+*                                      *
+***************************************)
+
+DEFINITION MODULE Storage;
+
+  FROM SYSTEM IMPORT
+    ADDRESS;
+
+  PROCEDURE ALLOCATE(VAR a: ADDRESS; size: CARDINAL);
+    (* ALLOCATE allocates an area of the given size and returns
+       it's address in a. If no space is available, the calling
+       program is killed.                                       *)
+
+  PROCEDURE DEALLOCATE(VAR a: ADDRESS; size: CARDINAL);
+    (* DEALLOCATE frees the area at address a with the given size. *)
+
+  PROCEDURE ResetHeap(VAR a: ADDRESS);
+
+END Storage.

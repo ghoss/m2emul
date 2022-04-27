@@ -1,0 +1,75 @@
+(******************************************************
+**
+** MODULE Program
+**
+** Origin:
+** - medos42a Lilith disk image by Jos Dreesen
+**
+** Modifications by Guido Hoss for MULE M-Code Emulator
+** - Removed EXPORT list (for M2 single pass compiler)
+**
+** 02.04.2022 
+**
+*******************************************************)
+
+(***************************************
+*                                      *
+*          M E D O S - 2               *
+*          *************               *
+*                                      *
+*                                      *
+*          Program:                    *
+*                                      *
+*          Module for                  *
+*          - program execution and     *
+*          - storage management.       *
+*                                      *
+*          Version 2   4.10.80         *    
+*                                      *
+*                                      *
+*          Svend Erik Knudsen          *
+*          Institut fuer Informatik    *
+*          ETH-Zuerich                 *
+*          CH-8092 Zuerich             *
+*                                      *
+***************************************)
+
+DEFINITION MODULE Program;
+
+  FROM SYSTEM IMPORT ADDRESS;
+
+  TYPE
+    Status = (normal,
+              instructionerr, priorityerr,
+              spaceerr, rangeerr,
+              addressoverflow, realoverflow, 
+              cardinaloverflow, integeroverflow,
+              functionerr,
+              halted,
+              asserted, warned, stopped,
+              callerr, 
+              programnotfound, programalreadyloaded,
+              modulenotfound, codekeyerr, incompatiblemodule,
+              maxspaceerr, maxmoduleerr, 
+              filestructureerr, fileerr,
+              loaderr);
+
+
+  PROCEDURE Call(programname: ARRAY OF CHAR; shared: BOOLEAN;
+                 VAR st: Status);
+
+  PROCEDURE Terminate(st: Status);
+
+
+  PROCEDURE MainProcess(): BOOLEAN; 
+ 
+  PROCEDURE CurrentLevel(): CARDINAL; 
+
+  PROCEDURE SharedLevel(): CARDINAL;
+ 
+
+  PROCEDURE AllocateHeap(quantum: CARDINAL): ADDRESS; 
+
+  PROCEDURE DeallocateHeap(quantum: CARDINAL): ADDRESS;
+
+END Program.

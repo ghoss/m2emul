@@ -5,6 +5,9 @@
 ** Origin:
 ** - medos42a Lilith disk image by Jos Dreesen
 **
+** Modifications by Guido Hoss for MULE M-Code Emulator
+** - None
+**
 ** 02.04.2022 
 **
 *******************************************************)
