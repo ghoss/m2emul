@@ -366,7 +366,6 @@ uint32_t le_execute(uint8_t exec_mod)
 
 		case 0200 : {
 			// LSW  load stack word
-			_HALT
 			uint16_t i = es_pop() + le_next();
 			es_push(dsh_mem[i]);
 			break;
@@ -374,7 +373,6 @@ uint32_t le_execute(uint8_t exec_mod)
 
 		case 0201 : {
 			// LSD  load stack double word
-			_HALT
 			uint16_t i = es_pop() + le_next();
 			es_push(dsh_mem[i]);
 			es_push(dsh_mem[i + 1]);
@@ -383,7 +381,6 @@ uint32_t le_execute(uint8_t exec_mod)
 
 		case 0202 : {
 			// LSD0  load stack double word
-			_HALT
 			uint16_t i = es_pop();
 			es_push(dsh_mem[i]);
 			es_push(dsh_mem[i + 1]);
@@ -587,8 +584,9 @@ uint32_t le_execute(uint8_t exec_mod)
 			// FMUL  floating multiply
 			floatword_t y = es_dpop();
 			floatword_t x = es_dpop();
-			x.f *= y.f;
-			x.bf.e -= 2;	// 4x*4y=16xy, so divide by 4 to fix result
+
+			// 4x * 4y = 16xy, so divide by 4 to fix result
+			x.f = (x.f * y.f) * 0.25;
 			es_dpush(x);
 			break;
 		}
@@ -597,8 +595,9 @@ uint32_t le_execute(uint8_t exec_mod)
 			// FDIV  floating divide
 			floatword_t y = es_dpop();
 			floatword_t x = es_dpop();
-			x.f /= y.f;
-			x.bf.e += 2;	// 4x/4y=xy, so multiply by 4 to fix result
+
+			// 4x/4y=xy, so multiply by 4 to fix result
+			x.f = (4.0 * x.f) / y.f;
 			es_dpush(x);
 			break;
 		}
@@ -650,8 +649,7 @@ uint32_t le_execute(uint8_t exec_mod)
 				case 0 :
 					// Convert INTEGER to REAL
 					// Multiply result by 4 to fix to IEEE754 standard
-					z.f = (float) es_pop();
-					z.bf.e += 2;
+					z.f = ((float) es_pop()) * 4.0;
 					es_dpush(z);
 					break;
 
@@ -659,8 +657,7 @@ uint32_t le_execute(uint8_t exec_mod)
 					// CONVERT long (32-bit) integer TO REAL
 					// Multiply result by 4 to fix to IEEE754 standard
 					floatword_t z1 = es_dpop();
-					z.f = (float) z1.l;
-					z.bf.e += 2;
+					z.f = ((float) z1.l) * 4.0;
 					es_dpush(z);
 					break;
 				}
@@ -669,8 +666,7 @@ uint32_t le_execute(uint8_t exec_mod)
 					// Convert REAL to INTEGER
 					// Divide value by 4 to fix to IEEE754 standard
 					z = es_dpop();
-					z.bf.e -= 2;
-					es_push((int16_t) z.f);
+					es_push((int16_t) (z.f * 0.25));
 					break;
 
 				case 3 : {
