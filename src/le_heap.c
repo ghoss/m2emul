@@ -10,6 +10,7 @@
 //=====================================================
 
 #include "le_mach.h"
+#include "le_io.h"
 #include "le_heap.h"
 
 
@@ -95,7 +96,7 @@ uint16_t hp_alloc(uint8_t mod, uint16_t sz)
 		else
 		{
 			// Heap overflow error
-			error(1, 0, "Heap overflow");
+			le_error(1, 0, "Heap overflow");
 		}
 	}
 	return cur->adr;
@@ -176,7 +177,7 @@ void hp_free_int(uint8_t mod, uint16_t ptr, uint16_t limit, bool by_ptr)
 
 	// At end of block list?
 	if ((cur == NULL) && by_ptr)
-		error(1, 0, "Heap pointer *%04X invalid", ptr);
+		le_error(1, 0, "Heap pointer *%04X invalid", ptr);
 }
 
 

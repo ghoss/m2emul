@@ -11,6 +11,7 @@
 
 #include "le_mach.h"
 #include "le_stack.h"
+#include "le_io.h"
 #include "le_heap.h"
 
 
@@ -69,7 +70,7 @@ mod_entry_t *find_mod_entry(mod_id_t *mod)
             else
             {
                 // Key mismatch
-                error(1, 0, 
+                le_error(1, 0, 
                     "Object key mismatch: '%s'\r\n"
                     "  Found:    %04X %04X %04X\r\n"
                     "  Expected: %04X %04X %04X\r\n",
@@ -95,7 +96,7 @@ mod_entry_t *init_mod_entry(mod_id_t *mod)
     {
         // Register new module
         if (module_num == MOD_TAB_MAX)
-            error(1, 0, "Module table overflow");
+            le_error(1, 0, "Module table overflow");
 
         // Assign new entry in table
         p = &(module_tab[module_num]);
@@ -123,7 +124,7 @@ void init_module_tab()
 {
 	module_tab = malloc(MOD_TAB_MAX * sizeof(mod_entry_t));
 	if (module_tab == NULL)
-		error(1, errno, "Can't allocate module table");
+		le_error(1, errno, "Can't allocate module table");
 
     // Make a bogus entry for SYSTEM module in index 0 with key 0
     strcpy(module_tab->id.name, "System");
@@ -144,7 +145,7 @@ void mach_init()
     // Allocate data/stack/heap memory and zero it
     if ((dsh_mem = calloc(MACH_DSHMEM_SZ, MACH_WORD_SZ)) == NULL)
 	{
-        error(1, errno, "Can't allocate DSH memory");
+        le_error(1, errno, "Can't allocate DSH memory");
 	}
 
 	// data_top points to the top of the module data area

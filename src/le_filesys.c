@@ -9,7 +9,9 @@
 // Published by Guido Hoss under GNU Public License V3.
 //=====================================================
 
+#include <sys/stat.h>
 #include "le_mach.h"
+#include "le_io.h"
 #include "le_filesys.h"
 
 
@@ -98,7 +100,7 @@ fs_index_ptr fs_find_fd(uint16_t m2_fd, bool fatal_err)
 		}
 
 		if (fatal_err)
-			error(1, 0, "Invalid M2 file descriptor");
+			le_error(1, 0, "Invalid M2 file descriptor");
 		
 		return NULL;
 	}
@@ -137,7 +139,7 @@ bool fs_open(uint8_t mod, char *fn, char *fn_buf, bool create, uint16_t m2_fd)
 		// Successful; add entry to list of open files
 		fs_index_ptr p = malloc(sizeof(struct fs_index_t));
 		if (p == NULL)
-			error(1, errno, "fs_open malloc failed");
+			le_error(1, errno, "fs_open malloc failed");
 		
 		p->fd = f;
 		p->m2file = m2_fd;
@@ -183,7 +185,7 @@ bool fs_close_int(fs_index_ptr p)
 	if (p->temp && (unlink(p->fname) != 0))
 	{
 		res = false;
-		error(0, errno, "fs_close unlink failed");
+		le_error(0, errno, "fs_close unlink failed");
 	}
 
 	// Free filename buffer associated with file
@@ -329,4 +331,18 @@ bool fs_setpos(uint16_t m2_fd, uint32_t pos)
 	fs_index_ptr p = fs_find_fd(m2_fd, true);
 
 	return (fseek(p->fd, pos, SEEK_SET) != -1);
+}
+
+
+// fs_length()
+// Gets the length of a file
+//
+bool fs_length(uint16_t m2_fd, uint32_t *len)
+{
+	fs_index_ptr p = fs_find_fd(m2_fd, true);
+	struct stat sb;
+
+ 	bool res = (fstat(fileno(p->fd), &sb) == 0);
+	*len = res ? sb.st_size : 0;
+	return res;
 }

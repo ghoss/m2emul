@@ -104,9 +104,9 @@ int main(int argc, char *argv[])
 			if (top > 0)
 			{
 				// Execute module
-				VERBOSE("Starting execution.\n")
+				le_verbose_msg("Starting execution.\n");
 				le_execute(top);
-				VERBOSE("Execution terminated normally.\n")
+				le_verbose_msg("Execution terminated normally.\n");
 			}
 		}
 		free(fn1);

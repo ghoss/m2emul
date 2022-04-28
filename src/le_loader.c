@@ -10,6 +10,7 @@
 //=====================================================
 
 #include "le_mach.h"
+#include "le_io.h"
 #include "le_trace.h"
 #include "le_loader.h"
 
@@ -19,7 +20,7 @@
 //
 void le_memerr()
 {
-	error(1, errno, "Loader: could not allocate memory");
+	le_error(1, errno, "Loader: could not allocate memory");
 }
 
 
@@ -28,7 +29,7 @@ void le_memerr()
 //
 void le_rderr(char *msg)
 {
-	error(1, errno, "Object file read error (%s)", msg);
+	le_error(1, errno, "Object file read error (%s)", msg);
 }
 
 
@@ -93,7 +94,7 @@ void le_expect(FILE *f, uint16_t w)
     uint16_t wr = le_rword(f);
 
     if (wr != w)
-        error(1, 0, "Object file error: expected %04x, got %04x", w, wr);
+        le_error(1, 0, "Object file error: expected %04x, got %04x", w, wr);
 }
 
 
@@ -148,13 +149,13 @@ void le_parse_objfile(FILE *f)
             if (((mod->code = calloc(mod->code_sz, 1)) == NULL))
                 le_memerr();
 
-            VERBOSE(
+            le_verbose_msg(
                 "Module %s [%d]  "
 				"(%d data words/%d code bytes, offset=%d)\n",
                 modid.name, mod->id.idx, 
                 mod->data_sz, mod->code_sz,
 				mod->data_ofs
-            )
+            );
             le_rword(f);
             break;
         }
@@ -180,10 +181,10 @@ void le_parse_objfile(FILE *f)
                 // Store entry to import table
                 memcpy(mod->import + i, &(p->id), sizeof(mod_id_t));
 
-                VERBOSE(
+                le_verbose_msg(
 					"  imports %s [%d]%c\n", p->id.name, p->id.idx,
 					p->id.loaded ? ' ' : '*'
-				)
+				);
             }
             break;
         }
@@ -195,7 +196,7 @@ void le_parse_objfile(FILE *f)
 
                 // Check for data frame overrun
                 if (a + n > mod->data_sz)
-                    error(1, 0, 
+                    le_error(1, 0, 
                         "Module %s: Data frame overrun", mod->id.name
                     );
 
@@ -240,7 +241,7 @@ void le_parse_objfile(FILE *f)
 
                 // Check for code frame overrun
                 if (a + n > mod->code_sz)
-                    error(1, 0, 
+                    le_error(1, 0, 
                         "Module %s: Code frame overrun", mod->id.name
                     );
 
@@ -291,11 +292,11 @@ void le_fix_extcalls(uint8_t top)
         mod_entry_t *mod = &(module_tab[top]);
 
         if (! mod->id.loaded)
-            error(1, 0, "Module %s missing after load", mod->id.name);
+            le_error(1, 0, "Module %s missing after load", mod->id.name);
         
 		// Part 1: Create final procedure table
 		n = mod->proc_n;
-        VERBOSE("Fixup %s (%d procs)\n", mod->id.name, n)
+        le_verbose_msg("Fixup %s (%d procs)\n", mod->id.name, n);
 		if (n > 0) 
 		{
 			// Allocate memory for procedure table
@@ -315,7 +316,7 @@ void le_fix_extcalls(uint8_t top)
 				{
 					uint16_t loc = pt->fixup[i];
 					if (loc >= mod->code_sz)
-						error(1, 0, "Fixup codeframe overrun\n");
+						le_error(1, 0, "Fixup codeframe overrun\n");
 
 					// Fixup location depending on opcode in [loc-1]
 					uint8_t opc = mod->code[loc - 1];
@@ -332,7 +333,7 @@ void le_fix_extcalls(uint8_t top)
 						case 0355 :	// CLX
 							// Change first opbyte to absolute index of module
 							if (b1 > mod->import_n)
-								error(1, 0, 
+								le_error(1, 0, 
 									"%s: %07o opc %03o illegal module #%03o", 
 									mod->id.name, loc - 1, opc, b1
 								);
@@ -341,7 +342,7 @@ void le_fix_extcalls(uint8_t top)
 						
 						default :
 							le_decode(mod, loc - 1);
-							error(1, 0, 
+							le_error(1, 0, 
 								"Module %s: fixup #%03o invalid", 
 								mod->id.name, b1
 							);
@@ -391,7 +392,7 @@ FILE *le_load_search(char *fn, char *alt_prefix)
     }
 
     // Try filename "fn" (assumed to already be a basename)
-    VERBOSE("Opening '%s'... ", fn1)
+    le_verbose_msg("Opening '%s'... ", fn1);
     if (((f = fopen(fn1, "r")) == NULL)
         && (strncmp(fn1, alt_prefix, 4) != 0))
     {
@@ -401,15 +402,15 @@ FILE *le_load_search(char *fn, char *alt_prefix)
 			le_memerr();
         strcpy(fn2, alt_prefix);
         strcat(fn2, fn1);
-        VERBOSE(" failed\nTrying '%s'... ", fn2)
+        le_verbose_msg(" failed\nTrying '%s'... ", fn2);
 
         if ((f = fopen(fn2, "r")) == NULL)
-            VERBOSE(" failed\n")
+            le_verbose_msg(" failed\n");
         free(fn2);
     }
 
     if (f != NULL)
-        VERBOSE("ok\n")
+        le_verbose_msg("ok\n");
 
     free(fn1);
     return f;
@@ -428,7 +429,7 @@ bool le_load_objfile(char *fn, char *alt_prefix)
     // Try to open object file
     if ((f = le_load_search(fn, alt_prefix)) == NULL)
     {
-        error(0, 0, "Could not load '%s'", fn);
+        le_error(0, 0, "Could not load '%s'", fn);
         return false;
     }
 

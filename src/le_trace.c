@@ -11,13 +11,14 @@
 
 #include "le_usage.h"
 #include "le_mach.h"
+#include "le_io.h"
 #include "le_stack.h"
 #include "le_heap.h"
 #include "le_trace.h"
 
 
 // Output shorthand
-#define OUT(...)		printw(__VA_ARGS__);
+#define OUT(...)		wprintw(app_win, __VA_ARGS__);
 
 // Global variables
 bool le_trace = false;		// Enables trace mode
@@ -81,7 +82,7 @@ void le_show_callchain(mod_entry_t *modp)
 			m &= 0xff;
 			modp = &(module_tab[m]);
 		}
-		VERBOSE("\n%16s(%d):%07o\n", modp->id.name, modp->id.idx, pc)
+		le_verbose_msg("\n%16s(%d):%07o\n", modp->id.name, modp->id.idx, pc);
 		
 		adr = dsh_mem[adr + 1];
 	}
@@ -318,26 +319,28 @@ void le_monitor(mod_entry_t *mod)
 	echo();
 	while (! quit) {
 		refresh();
-		VERBOSE("cmd> ")
+		le_verbose_msg("cmd> ");
 
 		switch (getch())
 		{
 			case '\n' :
 				// Ignore EOL
-				printw("\n");
+				wprintw(app_win, "\n");
 				continue;
 
 			case 'r' :
 				// Switch register display on/off
 				show_regs = ! show_regs;
-				VERBOSE("\nRegister display now %s\n", show_regs ? "ON" : "OFF")
+				le_verbose_msg(
+					"\nRegister display now %s\n", show_regs ? "ON" : "OFF"
+				);
 				break;
 
 			case 'd' : {
 				// Show contents of data word
 				uint16_t w;
 				scanw("%hx", &w);
-				VERBOSE("data[%04X]=x%04X\n", w, dsh_mem[gs_G + w]);
+				le_verbose_msg("data[%04X]=x%04X\n", w, dsh_mem[gs_G + w]);
 				break;
 			}
 
@@ -349,7 +352,7 @@ void le_monitor(mod_entry_t *mod)
 			case 'b' : {
 				// Set breakpoint
 				scanw("%hhd:%ho", &bp_module, &bp_PC);
-				VERBOSE(
+				le_verbose_msg(
 					"Breakpoint set to %s:%07o\n", 
 					module_tab[bp_module].id.name, bp_PC
 				);
@@ -366,7 +369,7 @@ void le_monitor(mod_entry_t *mod)
 				}
 				else
 				{
-					VERBOSE("\nNo breakpoint set\n")
+					le_verbose_msg("\nNo breakpoint set\n");
 				}
 				continue;
 
@@ -409,11 +412,11 @@ void le_monitor(mod_entry_t *mod)
 
 			case 'q' :
 				// Exit
-				VERBOSE("\nQuitting\n")
+				le_verbose_msg("\nQuitting\n");
 				exit(0);
 
 			default :
-				VERBOSE("\nUnknown command\n")
+				le_verbose_msg("\nUnknown command\n");
 				break;
 		}
 	}
@@ -432,7 +435,7 @@ void le_trap(mod_entry_t *modp, uint16_t n)
 	if (le_verbose)
 		le_show_registers(modp);
 		
-	error(1, 0, 
+	le_error(1, 0, 
 		"TRAP #%d: %s\r\n%d:%07o (%s)", 
 		n, trap_descr[n], modp->id.idx, gs_PC - 1, modp->id.name
 	);

@@ -16,7 +16,11 @@
 //
 WINDOW *app_win;
 char kbd_buf;
-
+enum {
+	LE_COL_NORMAL,
+	LE_COL_ERROR,
+	LE_COL_VERBOSE
+};
 
 // le_ioread()
 // Read word from hardware channel
@@ -45,7 +49,7 @@ uint16_t le_ioread(uint16_t chan)
 			break;
 
 		default :
-			error(1, 0, "READ from channel #%d not implemented", chan);
+			le_error(1, 0, "READ from channel #%d not implemented", chan);
 			break;
 	}
 	return val;
@@ -57,7 +61,7 @@ uint16_t le_ioread(uint16_t chan)
 //
 void le_iowrite(uint16_t chan, uint16_t w)
 {
-    error(1, 0, "WRITE not implemented (%d,%d)", chan, w);
+    le_error(1, 0, "WRITE not implemented (%d,%d)", chan, w);
 }
 
 
@@ -66,19 +70,17 @@ void le_iowrite(uint16_t chan, uint16_t w)
 //
 void le_putchar(char c)
 {
-	attron(A_BOLD);
 	switch (c)
 	{
 		case 0177 :
-			printw("\010");
+			wprintw(app_win, "\010");
 			delch();
 			break;
 
 		default :
-			printw("%c", c);
+			wprintw(app_win, "%c", c);
 			break;
 	}
-	attroff(A_BOLD);
 	refresh();
 }
 
@@ -101,7 +103,57 @@ void le_cleanup_io()
 void le_init_io()
 {
 	app_win = initscr();
+	start_color();
+	init_pair(LE_COL_NORMAL, COLOR_GREEN, COLOR_BLACK);
+	init_pair(LE_COL_ERROR, COLOR_RED, COLOR_BLACK);
+	init_pair(LE_COL_VERBOSE, COLOR_CYAN, COLOR_BLACK);
+	wattron(app_win, COLOR_PAIR(LE_COL_NORMAL));
 	timeout(0);
 	noecho();
 	scrollok(app_win, true);
+}
+
+
+// le_error()
+// Issue error message similar to standard error() call
+// but this variant is compatible with ncurses.
+//
+void le_error(bool ex_code, int errnum, char *msg, ...)
+{
+	// Get variable argument list
+	va_list arg_p;
+	va_start(arg_p, msg);
+
+	// Print message and variable arguments
+	wattron(app_win, COLOR_PAIR(LE_COL_ERROR));
+	vw_printw(app_win, msg, arg_p);
+
+	if (errnum != 0)
+		wprintw(app_win, " (%s)", strerror(errno));
+
+	wprintw(app_win, "\n");
+	wattroff(app_win, COLOR_PAIR(LE_COL_ERROR));
+
+	// Exit if exit code non-zero
+	if (ex_code != 0)
+		exit(ex_code);
+}
+
+
+// le_verbose_msg()
+// Issue the specified message if verbose mode is on
+//
+void le_verbose_msg(char *msg, ...)
+{
+	// Get variable argument list
+	if (le_verbose)
+	{
+		va_list arg_p;
+		va_start(arg_p, msg);
+
+		// Print message and variable arguments
+		wattron(app_win, COLOR_PAIR(LE_COL_VERBOSE));
+		vw_printw(app_win, msg, arg_p);
+		wattroff(app_win, COLOR_PAIR(LE_COL_VERBOSE));
+	}
 }

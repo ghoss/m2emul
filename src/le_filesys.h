@@ -32,6 +32,7 @@ bool fs_write(uint16_t m2_fd, uint16_t w, bool is_char);
 bool fs_read(uint16_t m2_fd, uint16_t *w, bool is_char);
 bool fs_getpos(uint16_t m2_fd, uint32_t *pos);
 bool fs_setpos(uint16_t m2_fd, uint32_t pos);
+bool fs_length(uint16_t m2_fd, uint32_t *len);
 bool fs_rename(uint16_t m2_fd, char *fn, char *fn_buf);
 
 #endif

@@ -47,8 +47,8 @@ void le_prog_usage()
 //
 void le_monitor_usage()
 {
-    printw(
-        "t\tExecute one instruction\n"
+    wprintw(app_win,
+        "\nt\tExecute one instruction\n"
 		"s\tExecute one instruction, but skip through proc calls"
 		"g\tExecute until next breakpoint or end of program\n"
 		"r\tSwitch register/stack display on/off\n"

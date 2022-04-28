@@ -10,6 +10,7 @@
 //=====================================================
 
 #include "le_mach.h"
+#include "le_io.h"
 #include "le_stack.h"
 
 
@@ -26,7 +27,7 @@ void es_init()
 {
     gs_SP = 0;
     if ((exs_mem = calloc(MACH_EXSMEM_SZ, MACH_WORD_SZ)) == NULL)
-        error(1, errno, "Can't allocate expression stack");
+        le_error(1, errno, "Can't allocate expression stack");
 }
 
 

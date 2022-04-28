@@ -12,6 +12,7 @@
 #include <time.h>
 #include <byteswap.h>
 #include "le_mach.h"
+#include "le_io.h"
 #include "le_stack.h"
 #include "le_heap.h"
 #include "le_filesys.h"
@@ -41,7 +42,7 @@ void le_system_call(uint8_t n)
 		case 4 :
 			// Get stack limit	
 		default :
-			error(1, 0, "SYS call %d not recognized", n);
+			le_error(1, 0, "SYS call %d not recognized", n);
 			break;
 	}
 }
@@ -75,7 +76,7 @@ void svc_heap_func(uint8_t mod)
 			break;
 
 		default :
-			error(1, 0, "Invalid allocation mode %d", mode);
+			le_error(1, 0, "Invalid allocation mode %d", mode);
 			break;
 	}
 }
@@ -162,19 +163,16 @@ void svc_file_func(uint8_t modn)
 		case 4 :
 			// SetRead(VAR f: File)
 			fs_reopen(m2_fd, FS_READ);
-			VERBOSE("setread\n");
 			break;
 
 		case 5 :
 			// SetWrite(VAR f: File)
 			fs_reopen(m2_fd, FS_WRITE);
-			VERBOSE("setwrite\n");
 			break; 
 
 		case 6 :
 			// SetModify(VAR f: File)
 			fs_reopen(m2_fd, FS_MODIFY);
-			VERBOSE("setmodify\n");
 			break;
 
 		case 7 :
@@ -203,20 +201,20 @@ void svc_file_func(uint8_t modn)
 		case 10 : {
 			// Length(VAR f: File; VAR highpos, lowpos: CARDINAL)
 			uint32_t pos = 0;
+			res = fs_length(m2_fd, &pos);
 			dsh_mem[es_pop()] = pos & 0xffff;
 			dsh_mem[es_pop()] = pos >> 16;
-			VERBOSE("length l=%u\n", pos);
 			break;
 		}
 
 		case 11 :
 			// Reset(VAR f: File)
-			VERBOSE("reset\n")
+			le_verbose_msg("fileop 'reset' not implemented\n");
 			break;
 
 		case 12 :
 			// Again(VAR f: File)
-			VERBOSE("again\n")
+			le_verbose_msg("fileop 'again' not implemented\n");
 			break;
 
 		case 13 : {
@@ -248,7 +246,7 @@ void svc_file_func(uint8_t modn)
 		}
 
 		default :
-			error(1, 0, "Filesystem command %d not implemented", cmd);
+			le_error(1, 0, "Filesystem command %d not implemented", cmd);
 			break;
 	}
 
@@ -284,7 +282,7 @@ void le_supervisor_call(uint8_t modn, uint8_t n)
 			break;
 
 		default :
-			error(1, 0, "Supervisor call %d not implemented", n);
+			le_error(1, 0, "Supervisor call %d not implemented", n);
 			break;
 	}
 }

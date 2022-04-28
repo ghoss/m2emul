@@ -20,7 +20,7 @@
 #include "le_loader.h"
 #include "le_mcode.h"
 
-#define _HALT	{ gs_PC --; error(1, 0, "Halted in %s:%07o at opcode %03o", modp->id.name, gs_PC, gs_IR); }
+#define _HALT	{ gs_PC --; le_error(1, 0, "Halted in %s:%07o at opcode %03o", modp->id.name, gs_PC, gs_IR); }
 
 
 // le_transfer()
@@ -1250,13 +1250,12 @@ uint32_t le_execute(uint8_t exec_mod)
 
 		case 0337 : {
 			// MOVF  move frame
-			uint16_t i = es_pop();
-			uint16_t j = es_pop();
-			j += es_pop() << 2;
-			uint16_t k = es_pop();
-			k += es_pop() << 2;
-			VERBOSE("MOVF ignored (%06X <- %06X for %d bytes)\n", k, j, i)
 			_HALT
+			// uint16_t i = es_pop();
+			// uint16_t j = es_pop();
+			// j += es_pop() << 2;
+			// uint16_t k = es_pop();
+			// k += es_pop() << 2;
 			// while (i-- > 0)
 			// 	dsh_mem[k ++] = dsh_mem[j ++];
 			break;
@@ -1460,7 +1459,6 @@ uint32_t le_execute(uint8_t exec_mod)
 				stk_mark(CALL_EXT, modn);
 				set_module_ptr(call_mod);
 				gs_PC = modp->proc[call_proc];
-				// VERBOSE("CLX %s.%d\n", modp->id.name, call_proc)
 			}
 			break;
 		}

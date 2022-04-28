@@ -23,8 +23,10 @@
 #include <string.h>
 
 
+// Application window for ncurses
+extern WINDOW *app_win;
+
 // Stack size
-//
 #define MACH_DSHMEM_SZ	65536	// Memory (data+stack+heap) size in words
 
 // Machine word = 16 bits
@@ -107,6 +109,5 @@ uint16_t mach_unload_top();
 // Tracing and debugging
 extern bool le_verbose;
 extern bool le_trace;
-#define VERBOSE(...)  if (le_verbose) { printw(__VA_ARGS__); refresh(); }
 
 #endif
