@@ -1,0 +1,17 @@
+(******************************************************
+**
+** MODULE Comint
+**
+** By Guido Hoss for MULE M-Code Emulator
+**
+** A simple command line interpreter for MULE.
+**
+** 02.04.2022 
+**
+*******************************************************)
+
+DEFINITION MODULE Comint;
+
+PROCEDURE ExitInterpreter;
+
+END Comint.

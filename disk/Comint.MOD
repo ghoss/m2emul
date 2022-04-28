@@ -26,17 +26,33 @@ FROM InOut IMPORT
 VAR
   s: ARRAY [0..255] OF CHAR;
   st: Program.Status;
+  exit: BOOLEAN;
+
+
+PROCEDURE ExitInterpreter;
+BEGIN
+	exit := TRUE;
+END ExitInterpreter;
+
 
 BEGIN
   WriteString("MULE Comint 1.0");
   WriteLn;
-  LOOP
+  exit := FALSE;
+
+  WHILE NOT exit DO
     WriteString("* ");
     ReadString(s); 
     WriteLn;
-    WriteString("Executing "); 
-    WriteString(s);
-    WriteLn;
-    Program.Call(s, FALSE, st);
+
+	IF (s[0] # 0C) THEN
+		WriteString("Executing "); 
+		WriteString(s);
+		WriteLn;
+		Program.Call(s, FALSE, st);
+	END;
   END;
+
+  WriteString("Terminated.");
+  WriteLn;
 END Comint.

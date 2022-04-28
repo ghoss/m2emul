@@ -64,3 +64,8 @@ object_file is the filename of a Lilith M-Code (OBJ) file.
 * Exit the Modula-2 compiler by pressing the ESC (Escape) key at the `in>` prompt.
 * For example, compile the included "Hello World" program (`Hello.MOD`) and run it by typing `Hello` at the command interpreter prompt.
 * More commands and shell features to follow…
+### "Comint" Shell Commands
+* `Comint` is a basic command interpreter. You can launch it directly by entering `mule my_directory/Comint`.
+* Type the name of any existing Modula-2 object file to execute it (the .OBJ suffix may be omitted).
+* `compile` executes Niklaus Wirth's Modula-2 single pass compiler.
+* `exit` terminates the shell and returns to the host operating system.
