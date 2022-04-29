@@ -28,8 +28,6 @@ Work in progress.
 * On the Lilith, all modules share the same 65K (16-bit) address space. **m2emul** provides more memory to programs while still maintaining the original 16-bit instruction set by assigning each module its own code space (max. 65KB per module).
 ### Current Limitations
 * No coroutines, interrupts, priorities and multitasking yet.
-### Planned Features
-* Framebuffer compatible with original code for graphical output (currently, the emulator only runs in terminal-based text mode).
 
 ## Build Process
 ### Prerequisites
