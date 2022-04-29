@@ -1,6 +1,6 @@
-# Modula-2 M-Code Interpreter and Virtual Machine
+# Modula-2 M-Code Interpreter
 ## Overview
-This will become an interpreter and virtual machine for Lilith Modula-2 M-Code object files.
+This will become an interpreter and runtime environment for Lilith Modula-2 M-Code object files.
 
 Work in progress.
 
