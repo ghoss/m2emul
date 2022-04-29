@@ -79,6 +79,6 @@ object_file is the filename of a Lilith M-Code (OBJ) file.
 ## Other Links
 You might be interested in my other UNIX-based, Lilith-related projects, which I built to help develop this interpreter:
 
-– ["m2decode"](https://github.com/ghoss/m2decode), a Lilith M-code object file disassembler 
-– ["m2disk"](https://github.com/ghoss/m2disk), a tool to import/export individual files from/to the Lilith disk images provided by Jos Dreesen in his repository at ftp.dreesen.ch
-– ["obdisk"](https://github.com/ghoss/m2disk), a tool to export files from Ceres disk images
+* ["m2decode"](https://github.com/ghoss/m2decode), a Lilith M-code object file disassembler 
+* ["m2disk"](https://github.com/ghoss/m2disk), a tool to import/export individual files from/to the Lilith disk images provided by Jos Dreesen in his repository at ftp.dreesen.ch
+* ["obdisk"](https://github.com/ghoss/m2disk), a tool to export files from Ceres disk images
