@@ -76,3 +76,9 @@ object_file is the filename of a Lilith M-Code (OBJ) file.
 * [Various PDF scans](https://github.com/ghoss/m2emul/tree/master/doc) of old ETHZ manuals and dissertations relating to Modula-2 and the Lilith architecture
 * A.F. Borchert's [early M-Code interpreter for UNIX Edition VII](https://github.com/afborchert/lilith-emulator) 
 * The description of the [Soviet "Kronos" machine](http://www.kronos.ru/documentation), a 32-bit Lilith variant with almost identical M-code semantics
+## Other Links
+You might be interested in my other UNIX-based, Lilith-related projects, which I built to help develop this interpreter:
+
+– ["m2decode"](https://github.com/ghoss/m2decode), a Lilith M-code object file disassembler 
+– ["m2disk"](https://github.com/ghoss/m2disk), a tool to import/export individual files from/to the Lilith disk images provided by Jos Dreesen in his repository at ftp.dreesen.ch
+– ["obdisk"](https://github.com/ghoss/m2disk), a tool to export files from Ceres disk images
