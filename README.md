@@ -75,7 +75,7 @@ object_file is the filename of a Lilith M-Code (OBJ) file.
 * A.F. Borchert's [early M-Code interpreter for UNIX Edition VII](https://github.com/afborchert/lilith-emulator) 
 * The description of the [Soviet "Kronos" machine](http://www.kronos.ru/documentation), a 32-bit Lilith variant with almost identical M-code semantics
 ## Other Links
-You might be interested in my other UNIX-based, Lilith-related projects, which I built to help develop this interpreter:
+You might be interested in my other UNIX-based, Lilith-related tools, which I built to help develop this project:
 
 * [m2decode](https://github.com/ghoss/m2decode), a Lilith M-code object file disassembler 
 * [m2disk](https://github.com/ghoss/m2disk), a tool to import/export individual files from/to the Lilith disk images provided by Jos Dreesen in his repository at ftp.dreesen.ch
