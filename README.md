@@ -69,3 +69,10 @@ object_file is the filename of a Lilith M-Code (OBJ) file.
 * Type the name of any existing Modula-2 object file to execute it (the .OBJ suffix may be omitted).
 * `compile` executes Niklaus Wirth's Modula-2 single pass compiler.
 * `exit` terminates the shell and returns to the host operating system.
+## References and Credits
+* Jos Dreesen's "Emulith" Lilith emulator
+* The original Lilith disk images at ftp.dreesen.ch
+* Sources of the ETHZ single pass compiler, discovered by Jos Dreesen
+* Various PDF scans of old ETHZ manuals and dissertations relating to Modula-2 and the Lilith architecture
+* A.F. Borchert's early M-Code interpreter for UNIX Edition VII 
+* The description of the Soviet "Kronos" machine, a 32-bit Lilith variant with almost identical M-code semantics
