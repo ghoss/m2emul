@@ -79,6 +79,8 @@ mule -i some_directory3 Hello
 ``` 
 will search for `Hello.OBJ` and `SYS.Hello.OBJ` in the directories `some_directory3`, `some_directory1` and `some_directory2` (in this order).
 Likewise, libraries required by `Hello.OBJ` for execution will be searched by (for example) `FileSystem.OBJ` and `LIB.FileSystem.OBJ` in the same directories.
+
+With this feature, you can store system programs (such as the M2 compiler and standard libraries) in one dedicated "system" directory, while maintaining your Modula-2 projects in different directories. 
 ## References and Credits
 * Jos Dreesen's "Emulith" Lilith emulator at ftp.dreesen.ch
 * The original Lilith disk images at ftp.dreesen.ch
