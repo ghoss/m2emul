@@ -15,5 +15,7 @@
 // Function declarations
 //
 uint8_t le_load_initfile(char *fn, char *alt_prefix);
+void le_include_path(char *path);
+void le_dump_paths();
 
 #endif

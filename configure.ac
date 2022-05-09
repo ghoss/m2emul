@@ -10,9 +10,19 @@
 # Process this file with autoconf to produce a configure script.
 
 AC_PREREQ([2.71])
-AC_INIT([mule], [0.1-alpha], [Guido Hoss])
+AC_INIT([mule], [0.1], [Guido Hoss])
 AM_INIT_AUTOMAKE([-Werror foreign subdir-objects])
 AC_CONFIG_HEADERS([config.h])
+
+# Checks for extra GNU functions
+AC_USE_SYSTEM_EXTENSIONS
+AC_DEFINE([_GNU_SOURCE])
+AH_VERBATIM([_GNU_SOURCE],
+[/* Enable GNU extensions on systems that have them.  */
+#ifndef _GNU_SOURCE
+#define _GNU_SOURCE
+#endif])
+AC_CHECK_DECLS([asprintf])
 
 # Checks for programs.
 AC_PROG_CC

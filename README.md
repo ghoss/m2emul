@@ -45,15 +45,19 @@ Work in progress.
 ## Usage
 ### Basic Syntax
 ```
-USAGE: mule [-hV] [object_file]
+USAGE: mule [-htvV] {-i path} [object_file]
 
--t      Enable trace mode (runtime debugging)
--h      Show this help information
--V      Show version information
+-i	Search specified path(s) for objects and libraries
+-t	Enable trace mode (runtime debugging)
+-h	Show this help information
+-V	Show version information
 
--v      Verbose mode
+-v	Verbose mode
 
 object_file is the filename of a Lilith M-Code (OBJ) file.
+
+Additional include paths may be specified in the
+environment variable MULE_PATH (delimited by colons).
 ```
 ### Practical use
 * Download all runtime files in the GitHub directory `disk` to a directory of your choice (e.g. `my_directory`).
@@ -67,6 +71,14 @@ object_file is the filename of a Lilith M-Code (OBJ) file.
 * Type the name of any existing Modula-2 object file to execute it (the .OBJ suffix may be omitted).
 * `compile` executes Niklaus Wirth's Modula-2 single pass compiler.
 * `exit` terminates the shell and returns to the host operating system.
+### Using Multiple Directories
+The `-i` option and the `MULE_PATH` environment variable allow you to specify directories where the loader will attempt to locate object and library files. For example:
+```
+export MULE_PATH=some_directory1:some_directory2
+mule -i some_directory3 Hello
+``` 
+will search for `Hello.OBJ` and `SYS.Hello.OBJ` in the directories `some_directory3`, `some_directory1` and `some_directory2` (in this order).
+Likewise, libraries required by `Hello.OBJ` for execution will be searched by (for example) `FileSystem.OBJ` and `LIB.FileSystem.OBJ` in the same directories.
 ## References and Credits
 * Jos Dreesen's "Emulith" Lilith emulator at ftp.dreesen.ch
 * The original Lilith disk images at ftp.dreesen.ch

@@ -15,6 +15,15 @@
 #include "le_loader.h"
 
 
+// Array of include paths
+typedef struct {
+	char *path;		// Pointer to path string
+} pathentry_t; 
+
+pathentry_t *patharray = NULL;
+uint16_t num_paths = 0;
+
+
 // le_memerr()
 // Halt because of failed memory allocation
 //
@@ -279,7 +288,7 @@ void le_parse_objfile(FILE *f)
 }
 
 
-// le_fix_extcalls
+// le_fix_extcalls()
 // Fixes external calls after modules i..max have been loaded
 //
 void le_fix_extcalls(uint8_t top)
@@ -370,13 +379,13 @@ void le_fix_extcalls(uint8_t top)
 }
 
 
-// le_load_search
+// le_load_search()
 // Locates an object file by first trying to open "fn",
 // then "alt_prefix.fn" if not successful
 //
 FILE *le_load_search(char *fn, char *alt_prefix)
 {
-    FILE *f;
+    FILE *f = NULL;
     char *fn1;
 
     // Reserve a string large enough for SYS./LIB. and .OBJ checks
@@ -391,29 +400,35 @@ FILE *le_load_search(char *fn, char *alt_prefix)
         strcat(fn1, ".OBJ");
     }
 
-    // Try filename "fn" (assumed to already be a basename)
-    le_verbose_msg("Opening '%s'... ", fn1);
-    if (((f = fopen(fn1, "r")) == NULL)
-        && (strncmp(fn1, alt_prefix, 4) != 0))
-    {
-        // Try alt_prefix (must be 3 chars + ".", e.g. LIB. or SYS.)
-        char *fn2 = malloc(strlen(fn1) + 5);
-		if (fn2 == NULL)
-			le_memerr();
-        strcpy(fn2, alt_prefix);
-        strcat(fn2, fn1);
-        le_verbose_msg(" failed\nTrying '%s'... ", fn2);
+	// Try to open filename and variants in all include paths
+	for (uint16_t i = 0; i < num_paths; i ++)
+	{
+		char *fpath;
 
-        if ((f = fopen(fn2, "r")) == NULL)
-            le_verbose_msg(" failed\n");
-        free(fn2);
-    }
+		// 1: Try direct lookup
+		asprintf(&fpath, "%s/%s", patharray[i].path, fn1);
+		le_verbose_msg("Trying '%s'... ", fpath);
+		f = fopen(fpath, "r");
+		free(fpath);
+		if (f != NULL)
+			break;
 
-    if (f != NULL)
-        le_verbose_msg("ok\n");
+		// 2: Try alt_prefix (if prefix not already specified)
+		if (strncmp(fn1, alt_prefix, 4) != 0)
+		{
+			asprintf(&fpath, "%s/%s.%s", patharray[i].path, alt_prefix, fn1);
+			le_verbose_msg("failed\nTrying '%s'... ", fpath);
+			f = fopen(fpath, "r");
+			free(fpath);
+			if (f != NULL)
+				break;
+		}
+		le_verbose_msg("failed\n");
+	}
+	free(fn1);
+	le_verbose_msg((f != NULL) ? "ok\n" : "failed\n");
 
-    free(fn1);
-    return f;
+	return f;
 }
 
 
@@ -447,7 +462,7 @@ bool le_load_objfile(char *fn, char *alt_prefix)
         if (! p->id.loaded)
         {
             // Try to load this module
-            if (! le_load_objfile(p->id.name, "LIB."))
+            if (! le_load_objfile(p->id.name, "LIB"))
                 return false;
         }
         top ++;
@@ -456,7 +471,7 @@ bool le_load_objfile(char *fn, char *alt_prefix)
 }
 
 
-// le_load_initfile
+// le_load_initfile()
 // Loads the initial object file and its dependencies
 //
 uint8_t le_load_initfile(char *fn, char *alt_prefix)
@@ -472,4 +487,46 @@ uint8_t le_load_initfile(char *fn, char *alt_prefix)
     le_fix_extcalls(top);
 	
 	return top;
+}
+
+
+// le_include_path()
+// Adds the specified path to the list of paths searched
+// for objects and libraries
+//
+void le_include_path(char *path)
+{
+	// Assign new array element for this path
+	if (patharray != NULL)
+	{
+		patharray = reallocarray(
+			patharray, num_paths + 1, sizeof(pathentry_t)
+		);
+	}
+	else
+	{
+		// First path in list; add the current directory before it
+		patharray = malloc(sizeof(pathentry_t));
+	}
+
+	// Store path in new array element
+	if (patharray != NULL)
+	{
+		patharray[num_paths].path = path;
+		num_paths ++;
+	}
+	else
+	{
+		le_memerr();
+	}
+}
+
+
+// le_dump_paths
+// Dumps the list of include paths (for verbose mode)
+//
+void le_dump_paths()
+{
+	for (uint16_t i = 0; i < num_paths; i ++)
+		le_verbose_msg("Include path %d: '%s'\n", i + 1, patharray[i].path);
 }

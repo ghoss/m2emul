@@ -767,7 +767,7 @@ uint32_t le_execute(uint8_t exec_mod)
 				data_top = gs_S;
 
 				// Try to load and execute the module
-				uint8_t top = le_load_initfile(fn, "SYS.");
+				uint8_t top = le_load_initfile(fn, "SYS");
 				if (top > 0)
 					le_execute(top);
 

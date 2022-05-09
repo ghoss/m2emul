@@ -32,12 +32,15 @@ void le_prog_version()
 void le_prog_usage()
 {
     printf(
-        "USAGE: " PKG " [-hV] [object_file]\n\n"
+        "USAGE: " PKG " [-htvV] {-i path} [object_file]\n\n"
+		"-i\tSearch specified path(s) for objects and libraries\n"
  		"-t\tEnable trace mode (runtime debugging)\n"
 		"-h\tShow this help information\n"
         "-V\tShow version information\n\n"
         "-v\tVerbose mode\n\n"
         "object_file is the filename of a Lilith M-Code (OBJ) file.\n\n"
+		"Additional include paths may be specified in the\n"
+		"environment variable MULE_PATH (delimited by colons).\n\n"
     );
 }
 

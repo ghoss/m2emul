@@ -261,7 +261,7 @@ target_alias = @target_alias@
 top_build_prefix = @top_build_prefix@
 top_builddir = @top_builddir@
 top_srcdir = @top_srcdir@
-AM_CFLAGS = -Wall -DVERSION_BUILD_DATE=\""$(shell date +'%F')"\"
+AM_CFLAGS = -Wall -DVERSION_BUILD_DATE=\""$(shell date +'%F')"\" -D_GNU_SOURCE
 mule_SOURCES = \
 	le_main.c \
 	le_mcode.c le_mcode.h \

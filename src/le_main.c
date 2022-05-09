@@ -20,6 +20,27 @@
 // Global variables
 //
 bool le_verbose = false;	// Checked by all procedures to enable verbosity
+char *mule_path = NULL;		// Pointer to copy of MULE_PATH environment 
+
+
+// parse_mule_path
+// Parses optional include paths in the MULE_PATH environment variable
+//
+void parse_mule_path()
+{
+	char *s = getenv("MULE_PATH");
+	if (s == NULL)
+		return;
+
+	char *mule_path = strdup(s);
+	char *path = strtok(mule_path, ":");
+	while (path != NULL)
+	{
+		error(0, 0, "mule_path = '%s'\n", path);
+		le_include_path(path);
+		path = strtok(NULL, ":");
+	}
+}
 
 
 // cleanup()
@@ -38,9 +59,12 @@ int main(int argc, char *argv[])
 {
 	char c;
 
+	// Set the current directory as include path before any -i options
+	le_include_path(".");
+
 	// Parse command line options
 	opterr = 0;
-	while ((c = getopt (argc, argv, "Vtvh")) != -1)
+	while ((c = getopt (argc, argv, "Vtvhi:")) != -1)
 	{
 		switch (c)
 		{
@@ -57,6 +81,11 @@ int main(int argc, char *argv[])
 		case 'v' :
 			// Verbose mode
 			le_verbose = true;
+			break;
+
+		case 'i' :
+			// Add include path
+			le_include_path(optarg);
 			break;
 
 		case 't' :
@@ -81,6 +110,9 @@ int main(int argc, char *argv[])
 		char *fn = argv[optind];
 		char *dirn, *basn, *fn1, *fn2;
 
+		// Add additional include paths from MULE_PATH
+		parse_mule_path();
+
 		// Get dirname and basename of input file
 		fn1 = strdup(fn);
 		fn2 = strdup(fn);
@@ -98,9 +130,10 @@ int main(int argc, char *argv[])
 			atexit(cleanup);
 			mach_init();
 			le_init_io();
+			le_dump_paths();
 			
 			// Try to load basename of input file
-			uint8_t top = le_load_initfile(basn, "SYS.");
+			uint8_t top = le_load_initfile(basn, "SYS");
 			if (top > 0)
 			{
 				// Execute module
@@ -111,6 +144,7 @@ int main(int argc, char *argv[])
 		}
 		free(fn1);
 		free(fn2);
+		free(mule_path);
 	}
 	else
 	{
